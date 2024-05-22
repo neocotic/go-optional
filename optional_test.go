@@ -25,6 +25,8 @@ import (
 	"encoding/json"
 	"encoding/xml"
 	"errors"
+	"fmt"
+	"github.com/neocotic/go-optional/internal/example"
 	"github.com/neocotic/go-optional/internal/test"
 	ptrs "github.com/neocotic/go-pointers"
 	"github.com/stretchr/testify/assert"
@@ -35,7 +37,7 @@ import (
 	"unicode"
 )
 
-func Benchmark_Optional_Filter(b *testing.B) {
+func BenchmarkOptional_Filter(b *testing.B) {
 	isPos := func(value int) bool {
 		return value >= 0
 	}
@@ -43,6 +45,40 @@ func Benchmark_Optional_Filter(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		_ = opt.Filter(isPos)
 	}
+}
+
+func ExampleOptional_Filter_int() {
+	isPos := func(value int) bool {
+		return value >= 0
+	}
+
+	example.Print(Empty[int]().Filter(isPos))
+	example.Print(Of(-123).Filter(isPos))
+	example.Print(Of(0).Filter(isPos))
+	example.Print(Of(123).Filter(isPos))
+
+	// Output:
+	// <empty>
+	// <empty>
+	// 0
+	// 123
+}
+
+func ExampleOptional_Filter_string() {
+	isLower := func(value string) bool {
+		return !strings.ContainsFunc(value, unicode.IsUpper)
+	}
+
+	example.Print(Empty[string]().Filter(isLower))
+	example.Print(Of("ABC").Filter(isLower))
+	example.Print(Of("").Filter(isLower))
+	example.Print(Of("abc").Filter(isLower))
+
+	// Output:
+	// <empty>
+	// <empty>
+	// ""
+	// "abc"
 }
 
 type optionalFilterTC[T any] struct {
@@ -57,7 +93,7 @@ func (tc optionalFilterTC[T]) Test(t *testing.T) {
 	assert.Equal(t, tc.expect, actual, "unexpected optional")
 }
 
-func Test_Optional_Filter(t *testing.T) {
+func TestOptional_Filter(t *testing.T) {
 	isPos := func(value int) bool {
 		return value >= 0
 	}
@@ -111,11 +147,33 @@ func Test_Optional_Filter(t *testing.T) {
 	})
 }
 
-func Benchmark_Optional_Get(b *testing.B) {
+func BenchmarkOptional_Get(b *testing.B) {
 	opt := Of(123)
 	for i := 0; i < b.N; i++ {
 		_, _ = opt.Get()
 	}
+}
+
+func ExampleOptional_Get_int() {
+	example.PrintGet(Empty[int]().Get())
+	example.PrintGet(Of(0).Get())
+	example.PrintGet(Of(123).Get())
+
+	// Output:
+	// 0 false
+	// 0 true
+	// 123 true
+}
+
+func ExampleOptional_Get_string() {
+	example.PrintGet(Empty[string]().Get())
+	example.PrintGet(Of("").Get())
+	example.PrintGet(Of("abc").Get())
+
+	// Output:
+	// "" false
+	// "" true
+	// "abc" true
 }
 
 type optionalGetTC[T any] struct {
@@ -131,7 +189,7 @@ func (tc optionalGetTC[T]) Test(t *testing.T) {
 	assert.Equal(t, tc.expectPresent, present, "unexpected value presence")
 }
 
-func Test_Optional_Get(t *testing.T) {
+func TestOptional_Get(t *testing.T) {
 	test.RunCases(t, test.Cases{
 		// Test cases for documented examples
 		"on empty int Optional": optionalGetTC[int]{
@@ -168,11 +226,31 @@ func Test_Optional_Get(t *testing.T) {
 	})
 }
 
-func Benchmark_Optional_IfPresent(b *testing.B) {
+func BenchmarkOptional_IfPresent(b *testing.B) {
 	opt := Of(123)
 	for i := 0; i < b.N; i++ {
 		opt.IfPresent(func(_ int) {})
 	}
+}
+
+func ExampleOptional_IfPresent_int() {
+	Empty[int]().IfPresent(example.PrintValue[int]) // Does nothing
+	Of(0).IfPresent(example.PrintValue[int])
+	Of(123).IfPresent(example.PrintValue[int])
+
+	// Output:
+	// 0
+	// 123
+}
+
+func ExampleOptional_IfPresent_string() {
+	Empty[string]().IfPresent(example.PrintValue[string]) // Does nothing
+	Of("").IfPresent(example.PrintValue[string])
+	Of("abc").IfPresent(example.PrintValue[string])
+
+	// Output:
+	// ""
+	// "abc"
 }
 
 type optionalIfPresentTC[T any] struct {
@@ -190,7 +268,7 @@ func (tc optionalIfPresentTC[T]) Test(t *testing.T) {
 	assert.Equalf(t, tc.expectCallCount, callCount, "expected function to be called %v times", tc.expectCallCount)
 }
 
-func Test_Optional_IfPresent(t *testing.T) {
+func TestOptional_IfPresent(t *testing.T) {
 	test.RunCases(t, test.Cases{
 		// Test cases for documented examples
 		"on empty int Optional": optionalIfPresentTC[int]{
@@ -221,11 +299,33 @@ func Test_Optional_IfPresent(t *testing.T) {
 	})
 }
 
-func Benchmark_Optional_IsEmpty(b *testing.B) {
+func BenchmarkOptional_IsEmpty(b *testing.B) {
 	opt := Of(123)
 	for i := 0; i < b.N; i++ {
 		_ = opt.IsEmpty()
 	}
+}
+
+func ExampleOptional_IsEmpty_int() {
+	fmt.Println(Empty[int]().IsEmpty())
+	fmt.Println(Of(0).IsEmpty())
+	fmt.Println(Of(123).IsEmpty())
+
+	// Output:
+	// true
+	// false
+	// false
+}
+
+func ExampleOptional_IsEmpty_string() {
+	fmt.Println(Empty[string]().IsEmpty())
+	fmt.Println(Of("").IsEmpty())
+	fmt.Println(Of("abc").IsEmpty())
+
+	// Output:
+	// true
+	// false
+	// false
 }
 
 type optionalIsEmptyTC[T any] struct {
@@ -239,7 +339,7 @@ func (tc optionalIsEmptyTC[T]) Test(t *testing.T) {
 	assert.Equal(t, tc.expect, absent, "unexpected value absence")
 }
 
-func Test_Optional_IsEmpty(t *testing.T) {
+func TestOptional_IsEmpty(t *testing.T) {
 	test.RunCases(t, test.Cases{
 		// Test cases for documented examples
 		"on empty int Optional": optionalIsEmptyTC[int]{
@@ -270,11 +370,33 @@ func Test_Optional_IsEmpty(t *testing.T) {
 	})
 }
 
-func Benchmark_Optional_IsPresent(b *testing.B) {
+func BenchmarkOptional_IsPresent(b *testing.B) {
 	opt := Of(123)
 	for i := 0; i < b.N; i++ {
 		_ = opt.IsPresent()
 	}
+}
+
+func ExampleOptional_IsPresent_int() {
+	fmt.Println(Empty[int]().IsPresent())
+	fmt.Println(Of(0).IsPresent())
+	fmt.Println(Of(123).IsPresent())
+
+	// Output:
+	// false
+	// true
+	// true
+}
+
+func ExampleOptional_IsPresent_string() {
+	fmt.Println(Empty[string]().IsPresent())
+	fmt.Println(Of("").IsPresent())
+	fmt.Println(Of("abc").IsPresent())
+
+	// Output:
+	// false
+	// true
+	// true
 }
 
 type optionalIsPresentTC[T any] struct {
@@ -288,7 +410,7 @@ func (tc optionalIsPresentTC[T]) Test(t *testing.T) {
 	assert.Equal(t, tc.expect, present, "unexpected value presence")
 }
 
-func Test_Optional_IsPresent(t *testing.T) {
+func TestOptional_IsPresent(t *testing.T) {
 	test.RunCases(t, test.Cases{
 		// Test cases for documented examples
 		"on empty int Optional": optionalIsPresentTC[int]{
@@ -319,11 +441,33 @@ func Test_Optional_IsPresent(t *testing.T) {
 	})
 }
 
-func Benchmark_Optional_IsZero(b *testing.B) {
+func BenchmarkOptional_IsZero(b *testing.B) {
 	opt := Of(123)
 	for i := 0; i < b.N; i++ {
 		_ = opt.IsZero()
 	}
+}
+
+func ExampleOptional_IsZero_int() {
+	fmt.Println(Empty[int]().IsZero())
+	fmt.Println(Of(0).IsZero())
+	fmt.Println(Of(123).IsZero())
+
+	// Output:
+	// true
+	// false
+	// false
+}
+
+func ExampleOptional_IsZero_string() {
+	fmt.Println(Empty[string]().IsZero())
+	fmt.Println(Of("").IsZero())
+	fmt.Println(Of("abc").IsZero())
+
+	// Output:
+	// true
+	// false
+	// false
 }
 
 type optionalIsZeroTC[T any] struct {
@@ -337,7 +481,7 @@ func (tc optionalIsZeroTC[T]) Test(t *testing.T) {
 	assert.Equal(t, tc.expect, absent, "unexpected value absence")
 }
 
-func Test_Optional_IsZero(t *testing.T) {
+func TestOptional_IsZero(t *testing.T) {
 	test.RunCases(t, test.Cases{
 		// Test cases for documented examples
 		"on empty int Optional": optionalIsZeroTC[int]{
@@ -368,11 +512,44 @@ func Test_Optional_IsZero(t *testing.T) {
 	})
 }
 
-func Benchmark_Optional_MarshalJSON(b *testing.B) {
+func BenchmarkOptional_MarshalJSON(b *testing.B) {
 	opt := Of(123)
 	for i := 0; i < b.N; i++ {
 		_, _ = json.Marshal(opt)
 	}
+}
+
+func ExampleOptional_MarshalJSON() {
+	// json omitempty option does not apply to zero value structs
+	type MyStruct struct {
+		Number Optional[int]    `json:"number,omitempty"`
+		Text   Optional[string] `json:"text,omitempty"`
+	}
+
+	example.PrintMarshalled(json.Marshal(Of(MyStruct{})))
+	example.PrintMarshalled(json.Marshal(Of(MyStruct{Number: Of(0), Text: Of("")})))
+	example.PrintMarshalled(json.Marshal(Of(MyStruct{Number: Of(123), Text: Of("abc")})))
+
+	// Output:
+	// {"number":null,"text":null} <nil>
+	// {"number":0,"text":""} <nil>
+	// {"number":123,"text":"abc"} <nil>
+}
+
+func ExampleOptional_MarshalJSON_pointers() {
+	type MyStruct struct {
+		Number *Optional[int]    `json:"number,omitempty"`
+		Text   *Optional[string] `json:"text,omitempty"`
+	}
+
+	example.PrintMarshalled(json.Marshal(Of(MyStruct{})))
+	example.PrintMarshalled(json.Marshal(Of(MyStruct{Number: ptrs.Value(Of(0)), Text: ptrs.Value(Of(""))})))
+	example.PrintMarshalled(json.Marshal(Of(MyStruct{Number: ptrs.Value(Of(123)), Text: ptrs.Value(Of("abc"))})))
+
+	// Output:
+	// {} <nil>
+	// {"number":0,"text":""} <nil>
+	// {"number":123,"text":"abc"} <nil>
 }
 
 type optionalMarshalJSONTC struct {
@@ -387,7 +564,7 @@ func (tc optionalMarshalJSONTC) Test(t *testing.T) {
 	assert.Equal(t, tc.expectJSON, string(b), "unexpected JSON")
 }
 
-func Test_Optional_MarshalJSON(t *testing.T) {
+func TestOptional_MarshalJSON(t *testing.T) {
 	type Example struct {
 		Int           Optional[int]     `json:"int"`
 		String        Optional[string]  `json:"string"`
@@ -452,11 +629,27 @@ func Test_Optional_MarshalJSON(t *testing.T) {
 	})
 }
 
-func Benchmark_Optional_MarshalXML(b *testing.B) {
+func BenchmarkOptional_MarshalXML(b *testing.B) {
 	opt := Of(123)
 	for i := 0; i < b.N; i++ {
 		_, _ = xml.Marshal(opt)
 	}
+}
+
+func ExampleOptional_MarshalXML() {
+	type MyStruct struct {
+		Number Optional[int]    `xml:"number,omitempty"`
+		Text   Optional[string] `xml:"text,omitempty"`
+	}
+
+	example.PrintMarshalled(xml.Marshal(Of(MyStruct{})))
+	example.PrintMarshalled(xml.Marshal(Of(MyStruct{Number: Of(0), Text: Of("")})))
+	example.PrintMarshalled(xml.Marshal(Of(MyStruct{Number: Of(123), Text: Of("abc")})))
+
+	// Output:
+	// <MyStruct></MyStruct> <nil>
+	// <MyStruct><number>0</number><text></text></MyStruct> <nil>
+	// <MyStruct><number>123</number><text>abc</text></MyStruct> <nil>
 }
 
 type optionalMarshalXMLTC struct {
@@ -471,7 +664,7 @@ func (tc optionalMarshalXMLTC) Test(t *testing.T) {
 	assert.Equal(t, tc.expectXML, string(b), "unexpected XML")
 }
 
-func Test_Optional_MarshalXML(t *testing.T) {
+func TestOptional_MarshalXML(t *testing.T) {
 	type Example struct {
 		Int           Optional[int]     `xml:"int"`
 		String        Optional[string]  `xml:"string"`
@@ -535,11 +728,29 @@ func Test_Optional_MarshalXML(t *testing.T) {
 	})
 }
 
-func Benchmark_Optional_MarshalYAML(b *testing.B) {
+func BenchmarkOptional_MarshalYAML(b *testing.B) {
 	opt := Of(123)
 	for i := 0; i < b.N; i++ {
 		_, _ = yaml.Marshal(opt)
 	}
+}
+
+func ExampleOptional_MarshalYAML() {
+	type MyStruct struct {
+		Number Optional[int]    `yaml:"number,omitempty"`
+		Text   Optional[string] `yaml:"text,omitempty"`
+	}
+
+	example.PrintMarshalled(yaml.Marshal(Of(MyStruct{})))
+	example.PrintMarshalled(yaml.Marshal(Of(MyStruct{Number: Of(0), Text: Of("")})))
+	example.PrintMarshalled(yaml.Marshal(Of(MyStruct{Number: Of(123), Text: Of("abc")})))
+
+	// Output:
+	// {} <nil>
+	// number: 0
+	// text: "" <nil>
+	// number: 123
+	// text: abc <nil>
 }
 
 type optionalMarshalYAMLTC struct {
@@ -554,7 +765,7 @@ func (tc optionalMarshalYAMLTC) Test(t *testing.T) {
 	assert.Equal(t, tc.expectYAML, strings.TrimSpace(string(b)), "unexpected YAML")
 }
 
-func Test_Optional_MarshalYAML(t *testing.T) {
+func TestOptional_MarshalYAML(t *testing.T) {
 	type Example struct {
 		Int           Optional[int]     `yaml:"int"`
 		String        Optional[string]  `yaml:"string"`
@@ -629,11 +840,37 @@ stringOmitPtr: abc`,
 	})
 }
 
-func Benchmark_Optional_OrElse(b *testing.B) {
+func BenchmarkOptional_OrElse(b *testing.B) {
 	opt := Of(123)
 	for i := 0; i < b.N; i++ {
 		_ = opt.OrElse(-1)
 	}
+}
+
+func ExampleOptional_OrElse_int() {
+	defaultVal := -1
+
+	example.PrintValue(Empty[int]().OrElse(defaultVal))
+	example.PrintValue(Of(0).OrElse(defaultVal))
+	example.PrintValue(Of(123).OrElse(defaultVal))
+
+	// Output:
+	// -1
+	// 0
+	// 123
+}
+
+func ExampleOptional_OrElse_string() {
+	defaultVal := "unknown"
+
+	example.PrintValue(Empty[string]().OrElse(defaultVal))
+	example.PrintValue(Of("").OrElse(defaultVal))
+	example.PrintValue(Of("abc").OrElse(defaultVal))
+
+	// Output:
+	// "unknown"
+	// ""
+	// "abc"
 }
 
 type optionalOrElseTC[T any] struct {
@@ -648,7 +885,7 @@ func (tc optionalOrElseTC[T]) Test(t *testing.T) {
 	assert.Equal(t, tc.expect, value, "unexpected value")
 }
 
-func Test_Optional_OrElse(t *testing.T) {
+func TestOptional_OrElse(t *testing.T) {
 	defaultInt := -1
 	defaultString := "unknown"
 
@@ -688,13 +925,43 @@ func Test_Optional_OrElse(t *testing.T) {
 	})
 }
 
-func Benchmark_Optional_OrElseGet(b *testing.B) {
+func BenchmarkOptional_OrElseGet(b *testing.B) {
 	opt := Of(123)
 	for i := 0; i < b.N; i++ {
 		_ = opt.OrElseGet(func() int {
 			return -1
 		})
 	}
+}
+
+func ExampleOptional_OrElseGet_int() {
+	defaultFunc := func() int {
+		return -1
+	}
+
+	example.PrintValue(Empty[int]().OrElseGet(defaultFunc))
+	example.PrintValue(Of(0).OrElseGet(defaultFunc))
+	example.PrintValue(Of(123).OrElseGet(defaultFunc))
+
+	// Output:
+	// -1
+	// 0
+	// 123
+}
+
+func ExampleOptional_OrElseGet_string() {
+	defaultFunc := func() string {
+		return "unknown"
+	}
+
+	example.PrintValue(Empty[string]().OrElseGet(defaultFunc))
+	example.PrintValue(Of("").OrElseGet(defaultFunc))
+	example.PrintValue(Of("abc").OrElseGet(defaultFunc))
+
+	// Output:
+	// "unknown"
+	// ""
+	// "abc"
 }
 
 type optionalOrElseGetTC[T any] struct {
@@ -709,7 +976,7 @@ func (tc optionalOrElseGetTC[T]) Test(t *testing.T) {
 	assert.Equal(t, tc.expect, value, "unexpected value")
 }
 
-func Test_Optional_OrElseGet(t *testing.T) {
+func TestOptional_OrElseGet(t *testing.T) {
 	defaultInt := -1
 	defaultIntFunc := func() int {
 		return defaultInt
@@ -755,13 +1022,50 @@ func Test_Optional_OrElseGet(t *testing.T) {
 	})
 }
 
-func Benchmark_Optional_OrElseTryGet(b *testing.B) {
+func BenchmarkOptional_OrElseTryGet(b *testing.B) {
 	opt := Of(123)
 	for i := 0; i < b.N; i++ {
 		_, _ = opt.OrElseTryGet(func() (int, error) {
 			return -1, nil
 		})
 	}
+}
+
+func ExampleOptional_OrElseTryGet_int() {
+	defaultFunc := func() (int, error) {
+		return -1, nil
+	}
+
+	example.PrintTryValue(Empty[int]().OrElseTryGet(defaultFunc))
+	example.PrintTryValue(Of(0).OrElseTryGet(defaultFunc))
+	example.PrintTryValue(Of(123).OrElseTryGet(defaultFunc))
+
+	// Output:
+	// -1 <nil>
+	// 0 <nil>
+	// 123 <nil>
+}
+
+func ExampleOptional_OrElseTryGet_string() {
+	var defaultStringUsed bool
+	defaultFunc := func() (string, error) {
+		if defaultStringUsed {
+			return "", errors.New("default string already used")
+		}
+		defaultStringUsed = true
+		return "unknown", nil
+	}
+
+	example.PrintTryValue(Empty[string]().OrElseTryGet(defaultFunc))
+	example.PrintTryValue(Of("").OrElseTryGet(defaultFunc))
+	example.PrintTryValue(Of("abc").OrElseTryGet(defaultFunc))
+	example.PrintTryValue(Empty[string]().OrElseTryGet(defaultFunc))
+
+	// Output:
+	// "unknown" <nil>
+	// "" <nil>
+	// "abc" <nil>
+	// "" "default string already used"
 }
 
 type optionalOrElseTryGetTC[T any] struct {
@@ -778,7 +1082,7 @@ func (tc optionalOrElseTryGetTC[T]) Test(t *testing.T) {
 	assert.Equal(t, tc.expectValue, value, "unexpected value")
 }
 
-func Test_Optional_OrElseTryGet(t *testing.T) {
+func TestOptional_OrElseTryGet(t *testing.T) {
 	defaultInt := -1
 	defaultIntFunc := func() (int, error) {
 		return defaultInt, nil
@@ -834,11 +1138,39 @@ func Test_Optional_OrElseTryGet(t *testing.T) {
 	})
 }
 
-func Benchmark_Optional_Require(b *testing.B) {
+func BenchmarkOptional_Require(b *testing.B) {
 	opt := Of(123)
 	for i := 0; i < b.N; i++ {
 		_ = opt.Require()
 	}
+}
+
+func ExampleOptional_Require_int() {
+	example.PrintValue(Of(0).Require())
+	example.PrintValue(Of(123).Require())
+
+	// Output:
+	// 0
+	// 123
+}
+
+func ExampleOptional_Require_panic() {
+	defer func() {
+		fmt.Println(recover())
+	}()
+
+	Empty[int]().Require()
+
+	// Output: go-optional: value not present
+}
+
+func ExampleOptional_Require_string() {
+	example.PrintValue(Of("").Require())
+	example.PrintValue(Of("abc").Require())
+
+	// Output:
+	// ""
+	// "abc"
 }
 
 type optionalRequireTC[T any] struct {
@@ -862,7 +1194,7 @@ func (tc optionalRequireTC[T]) Test(t *testing.T) {
 	}
 }
 
-func Test_Optional_Require(t *testing.T) {
+func TestOptional_Require(t *testing.T) {
 	test.RunCases(t, test.Cases{
 		// Test cases for documented examples
 		"on empty int Optional": optionalRequireTC[int]{
@@ -893,11 +1225,33 @@ func Test_Optional_Require(t *testing.T) {
 	})
 }
 
-func Benchmark_Optional_String(b *testing.B) {
+func BenchmarkOptional_String(b *testing.B) {
 	opt := Of(123)
 	for i := 0; i < b.N; i++ {
 		_ = opt.String()
 	}
+}
+
+func ExampleOptional_String_int() {
+	fmt.Printf("%q\n", Empty[int]().String())
+	fmt.Printf("%q\n", Of(0).String())
+	fmt.Printf("%q\n", Of(123).String())
+
+	// Output:
+	// "<empty>"
+	// "0"
+	// "123"
+}
+
+func ExampleOptional_String_string() {
+	fmt.Printf("%q\n", Empty[string]().String())
+	fmt.Printf("%q\n", Of("").String())
+	fmt.Printf("%q\n", Of("abc").String())
+
+	// Output:
+	// "<empty>"
+	// ""
+	// "abc"
 }
 
 type optionalStringTC[T any] struct {
@@ -911,7 +1265,7 @@ func (tc optionalStringTC[T]) Test(t *testing.T) {
 	assert.Equal(t, tc.expect, value, "unexpected string representation")
 }
 
-func Test_Optional_String(t *testing.T) {
+func TestOptional_String(t *testing.T) {
 	test.RunCases(t, test.Cases{
 		// Test cases for documented examples
 		"on empty int Optional": optionalStringTC[int]{
@@ -942,11 +1296,45 @@ func Test_Optional_String(t *testing.T) {
 	})
 }
 
-func Benchmark_Optional_UnmarshalJSON(b *testing.B) {
+func BenchmarkOptional_UnmarshalJSON(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		var opt Optional[int]
 		_ = json.Unmarshal([]byte(`123`), &opt)
 	}
+}
+
+func ExampleOptional_UnmarshalJSON() {
+	type MyStruct struct {
+		Number Optional[int]    `json:"number"`
+		Text   Optional[string] `json:"text"`
+	}
+
+	inputs := []string{
+		`{}`,
+		`{"number":null,"text":null}`,
+		`{"number":0,"text":""}`,
+		`{"number":123,"text":"abc"}`,
+	}
+
+	for _, input := range inputs {
+		var output MyStruct
+		if err := json.Unmarshal([]byte(input), &output); err != nil {
+			panic(err)
+		}
+
+		example.Print(output.Number)
+		example.Print(output.Text)
+	}
+
+	// Output:
+	// <empty>
+	// <empty>
+	// 0
+	// ""
+	// 0
+	// ""
+	// 123
+	// "abc"
 }
 
 type optionalUnmarshalJSONTC[T any] struct {
@@ -962,7 +1350,7 @@ func (tc optionalUnmarshalJSONTC[T]) Test(t *testing.T) {
 	assert.Equal(t, tc.expect, value, "unexpected value")
 }
 
-func Test_Optional_UnmarshalJSON(t *testing.T) {
+func TestOptional_UnmarshalJSON(t *testing.T) {
 	type Example struct {
 		Int       Optional[int]     `json:"int"`
 		String    Optional[string]  `json:"string"`
@@ -1020,11 +1408,42 @@ func Test_Optional_UnmarshalJSON(t *testing.T) {
 	})
 }
 
-func Benchmark_Optional_UnmarshalXML(b *testing.B) {
+func BenchmarkOptional_UnmarshalXML(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		var opt Optional[int]
 		_ = xml.Unmarshal([]byte(`<int>123</int>`), &opt)
 	}
+}
+
+func ExampleOptional_UnmarshalXML() {
+	type MyStruct struct {
+		Number Optional[int]    `xml:"number"`
+		Text   Optional[string] `xml:"text"`
+	}
+
+	inputs := []string{
+		`<MyStruct></MyStruct>`,
+		`<MyStruct><number>0</number><text></text></MyStruct>`,
+		`<MyStruct><number>123</number><text>abc</text></MyStruct>`,
+	}
+
+	for _, input := range inputs {
+		var output MyStruct
+		if err := xml.Unmarshal([]byte(input), &output); err != nil {
+			panic(err)
+		}
+
+		example.Print(output.Number)
+		example.Print(output.Text)
+	}
+
+	// Output:
+	// <empty>
+	// <empty>
+	// 0
+	// ""
+	// 123
+	// "abc"
 }
 
 type optionalUnmarshalXMLTC[T any] struct {
@@ -1040,7 +1459,7 @@ func (tc optionalUnmarshalXMLTC[T]) Test(t *testing.T) {
 	assert.Equal(t, tc.expect, value, "unexpected value")
 }
 
-func Test_Optional_UnmarshalXML(t *testing.T) {
+func TestOptional_UnmarshalXML(t *testing.T) {
 	type Example struct {
 		Int       Optional[int]     `xml:"int"`
 		String    Optional[string]  `xml:"string"`
@@ -1098,11 +1517,48 @@ func Test_Optional_UnmarshalXML(t *testing.T) {
 	})
 }
 
-func Benchmark_Optional_UnmarshalYAML(b *testing.B) {
+func BenchmarkOptional_UnmarshalYAML(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		var opt Optional[int]
 		_ = yaml.Unmarshal([]byte(`123`), &opt)
 	}
+}
+
+func ExampleOptional_UnmarshalYAML() {
+	type MyStruct struct {
+		Number Optional[int]    `json:"number"`
+		Text   Optional[string] `json:"text"`
+	}
+
+	inputs := []string{
+		`{}`,
+		`number: null
+text: null`,
+		`number: 0
+text: ""`,
+		`number: 123
+text: abc`,
+	}
+
+	for _, input := range inputs {
+		var output MyStruct
+		if err := yaml.Unmarshal([]byte(input), &output); err != nil {
+			panic(err)
+		}
+
+		example.Print(output.Number)
+		example.Print(output.Text)
+	}
+
+	// Output:
+	// <empty>
+	// <empty>
+	// <empty>
+	// <empty>
+	// 0
+	// ""
+	// 123
+	// "abc"
 }
 
 type optionalUnmarshalYAMLTC[T any] struct {
@@ -1118,7 +1574,7 @@ func (tc optionalUnmarshalYAMLTC[T]) Test(t *testing.T) {
 	assert.Equal(t, tc.expect, value, "unexpected value")
 }
 
-func Test_Optional_UnmarshalYAML(t *testing.T) {
+func TestOptional_UnmarshalYAML(t *testing.T) {
 	type Example struct {
 		Int       Optional[int]     `yaml:"int"`
 		String    Optional[string]  `yaml:"string"`
@@ -1182,12 +1638,54 @@ stringPtr: abc`,
 	})
 }
 
-func Benchmark_Compare(b *testing.B) {
+func BenchmarkCompare(b *testing.B) {
 	x := Of(123)
 	y := Of(-123)
 	for i := 0; i < b.N; i++ {
 		Compare(x, y)
 	}
+}
+
+func ExampleCompare_int() {
+	fmt.Println(Compare(Empty[int](), Of(0)))
+	fmt.Println(Compare(Of(0), Of(123)))
+
+	fmt.Println(Compare(Empty[int](), Empty[int]()))
+	fmt.Println(Compare(Of(0), Of(0)))
+	fmt.Println(Compare(Of(123), Of(123)))
+
+	fmt.Println(Compare(Of(0), Empty[int]()))
+	fmt.Println(Compare(Of(123), Of(0)))
+
+	// Output:
+	// -1
+	// -1
+	// 0
+	// 0
+	// 0
+	// 1
+	// 1
+}
+
+func ExampleCompare_string() {
+	fmt.Println(Compare(Empty[string](), Of("")))
+	fmt.Println(Compare(Of(""), Of("abc")))
+
+	fmt.Println(Compare(Empty[string](), Empty[string]()))
+	fmt.Println(Compare(Of(""), Of("")))
+	fmt.Println(Compare(Of("abc"), Of("abc")))
+
+	fmt.Println(Compare(Of(""), Empty[string]()))
+	fmt.Println(Compare(Of("abc"), Of("")))
+
+	// Output:
+	// -1
+	// -1
+	// 0
+	// 0
+	// 0
+	// 1
+	// 1
 }
 
 type compareTC[T cmp.Ordered] struct {
@@ -1202,7 +1700,7 @@ func (tc compareTC[T]) Test(t *testing.T) {
 	assert.Equal(t, tc.expect, actual, "unexpected comparison result")
 }
 
-func Test_Compare(t *testing.T) {
+func TestCompare(t *testing.T) {
 	test.RunCases(t, test.Cases{
 		// Test cases for documented examples
 		"with empty int Optional and non-empty int Optional with zero value": compareTC[int]{
@@ -1244,10 +1742,22 @@ func Test_Compare(t *testing.T) {
 	})
 }
 
-func Benchmark_Empty(b *testing.B) {
+func BenchmarkEmpty(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		Empty[int]()
 	}
+}
+
+func ExampleEmpty_int() {
+	example.Print(Empty[int]())
+
+	// Output: <empty>
+}
+
+func ExampleEmpty_string() {
+	example.Print(Empty[string]())
+
+	// Output: <empty>
 }
 
 type emptyTC[T any] struct {
@@ -1261,7 +1771,7 @@ func (tc emptyTC[T]) Test(t *testing.T) {
 	assert.False(t, present, "expected emptiness")
 }
 
-func Test_Empty(t *testing.T) {
+func TestEmpty(t *testing.T) {
 	test.RunCases(t, test.Cases{
 		// Test cases for documented examples
 		"with int":    emptyTC[int]{},
@@ -1270,11 +1780,37 @@ func Test_Empty(t *testing.T) {
 	})
 }
 
-func Benchmark_Find(b *testing.B) {
+func BenchmarkFind(b *testing.B) {
 	opts := []Optional[int]{Empty[int](), Empty[int](), Of(123)}
 	for i := 0; i < b.N; i++ {
 		_ = Find(opts...)
 	}
+}
+
+func ExampleFind_int() {
+	example.Print(Find[int]())
+	example.Print(Find(Empty[int]()))
+	example.Print(Find(Empty[int](), Of(0), Of(123)))
+	example.Print(Find(Empty[int](), Of(123), Of(0)))
+
+	// Output:
+	// <empty>
+	// <empty>
+	// 0
+	// 123
+}
+
+func ExampleFind_string() {
+	example.Print(Find[string]())
+	example.Print(Find(Empty[string]()))
+	example.Print(Find(Empty[string](), Of(""), Of("abc")))
+	example.Print(Find(Empty[string](), Of("abc"), Of("")))
+
+	// Output:
+	// <empty>
+	// <empty>
+	// ""
+	// "abc"
 }
 
 type findTC[T any] struct {
@@ -1291,7 +1827,7 @@ func (tc findTC[T]) Test(t *testing.T) {
 	assert.Equal(t, tc.expectPresent, present, "unexpected value presence")
 }
 
-func Test_Find(t *testing.T) {
+func TestFind(t *testing.T) {
 	test.RunCases(t, test.Cases{
 		// Test cases for documented examples
 		"with no int Optionals": findTC[int]{
@@ -1334,7 +1870,7 @@ func Test_Find(t *testing.T) {
 	})
 }
 
-func Benchmark_FlatMap(b *testing.B) {
+func BenchmarkFlatMap(b *testing.B) {
 	toString := func(value int) Optional[string] {
 		if value == 0 {
 			return Empty[string]()
@@ -1345,6 +1881,48 @@ func Benchmark_FlatMap(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		_ = FlatMap(opt, toString)
 	}
+}
+
+func ExampleFlatMap_int() {
+	mapper := func(value int) Optional[string] {
+		if value == 0 {
+			return Empty[string]()
+		}
+		return Of(strconv.FormatInt(int64(value), 10))
+	}
+
+	example.Print(FlatMap(Empty[int](), mapper))
+	example.Print(FlatMap(Of(0), mapper))
+	example.Print(FlatMap(Of(123), mapper))
+
+	// Output:
+	// <empty>
+	// <empty>
+	// "123"
+}
+
+func ExampleFlatMap_string() {
+	mapper := func(value string) Optional[int] {
+		if value == "" {
+			return Empty[int]()
+		}
+		i, err := strconv.ParseInt(value, 10, 0)
+		if err != nil {
+			panic(err)
+		}
+		return OfZeroable(int(i))
+	}
+
+	example.Print(FlatMap(Empty[string](), mapper))
+	example.Print(FlatMap(Of(""), mapper))
+	example.Print(FlatMap(Of("0"), mapper))
+	example.Print(FlatMap(Of("123"), mapper))
+
+	// Output:
+	// <empty>
+	// <empty>
+	// <empty>
+	// 123
 }
 
 type flatMapTC[T, M any] struct {
@@ -1362,7 +1940,7 @@ func (tc flatMapTC[T, M]) Test(t *testing.T) {
 	assert.Equal(t, tc.expectPresent, present, "unexpected value presence")
 }
 
-func Test_FlatMap(t *testing.T) {
+func TestFlatMap(t *testing.T) {
 	toInt := func(value string) Optional[int] {
 		if value == "" {
 			return Empty[int]()
@@ -1423,11 +2001,33 @@ func Test_FlatMap(t *testing.T) {
 	})
 }
 
-func Benchmark_GetAny(b *testing.B) {
+func BenchmarkGetAny(b *testing.B) {
 	opts := []Optional[int]{Empty[int](), Of(0), Of(123)}
 	for i := 0; i < b.N; i++ {
 		_ = GetAny(opts...)
 	}
+}
+
+func ExampleGetAny_int() {
+	example.PrintValues(GetAny[int]())
+	example.PrintValues(GetAny(Empty[int]()))
+	example.PrintValues(GetAny(Empty[int](), Of(0), Of(123)))
+
+	// Output:
+	// []
+	// []
+	// [0 123]
+}
+
+func ExampleGetAny_string() {
+	example.PrintValues(GetAny[string]())
+	example.PrintValues(GetAny(Empty[string]()))
+	example.PrintValues(GetAny(Empty[string](), Of("abc"), Of("")))
+
+	// Output:
+	// []
+	// []
+	// ["abc" ""]
 }
 
 type getAnyTC[T any] struct {
@@ -1441,7 +2041,7 @@ func (tc getAnyTC[T]) Test(t *testing.T) {
 	assert.Equal(t, tc.expect, actual, "unexpected values")
 }
 
-func Test_GetAny(t *testing.T) {
+func TestGetAny(t *testing.T) {
 	test.RunCases(t, test.Cases{
 		// Test cases for documented examples
 		"with no int Optionals": getAnyTC[int]{
@@ -1478,7 +2078,7 @@ func Test_GetAny(t *testing.T) {
 	})
 }
 
-func Benchmark_Map(b *testing.B) {
+func BenchmarkMap(b *testing.B) {
 	toString := func(value int) string {
 		return strconv.FormatInt(int64(value), 10)
 	}
@@ -1486,6 +2086,40 @@ func Benchmark_Map(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		_ = Map(opt, toString)
 	}
+}
+
+func ExampleMap_int() {
+	mapper := func(value int) string {
+		return strconv.FormatInt(int64(value), 10)
+	}
+
+	example.Print(Map(Empty[int](), mapper))
+	example.Print(Map(Of(0), mapper))
+	example.Print(Map(Of(123), mapper))
+
+	// Output:
+	// <empty>
+	// "0"
+	// "123"
+}
+
+func ExampleMap_string() {
+	mapper := func(value string) int {
+		i, err := strconv.ParseInt(value, 10, 0)
+		if err != nil {
+			panic(err)
+		}
+		return int(i)
+	}
+
+	example.Print(Map(Empty[string](), mapper))
+	example.Print(Map(Of("0"), mapper))
+	example.Print(Map(Of("123"), mapper))
+
+	// Output:
+	// <empty>
+	// 0
+	// 123
 }
 
 type mapTC[T, M any] struct {
@@ -1503,7 +2137,7 @@ func (tc mapTC[T, M]) Test(t *testing.T) {
 	assert.Equal(t, tc.expectPresent, present, "unexpected value presence")
 }
 
-func Test_Map(t *testing.T) {
+func TestMap(t *testing.T) {
 	toInt := func(value string) int {
 		i, err := strconv.ParseInt(value, 10, 0)
 		if err != nil {
@@ -1555,11 +2189,33 @@ func Test_Map(t *testing.T) {
 	})
 }
 
-func Benchmark_MustFind(b *testing.B) {
+func BenchmarkMustFind(b *testing.B) {
 	opts := []Optional[int]{Empty[int](), Of(0), Of(123)}
 	for i := 0; i < b.N; i++ {
 		_ = MustFind(opts...)
 	}
+}
+
+func ExampleMustFind_int() {
+	example.PrintValue(MustFind(Empty[int](), Of(0), Of(123)))
+
+	// Output: 0
+}
+
+func ExampleMustFind_panic() {
+	defer func() {
+		fmt.Println(recover())
+	}()
+
+	MustFind(Empty[int]())
+
+	// Output: go-optional: value not present
+}
+
+func ExampleMustFind_string() {
+	example.PrintValue(MustFind(Empty[string](), Of("abc"), Of("")))
+
+	// Output: "abc"
 }
 
 type mustFindTC[T any] struct {
@@ -1583,7 +2239,7 @@ func (tc mustFindTC[T]) Test(t *testing.T) {
 	}
 }
 
-func Test_MustFind(t *testing.T) {
+func TestMustFind(t *testing.T) {
 	test.RunCases(t, test.Cases{
 		// Test cases for documented examples
 		"with no int Optionals": mustFindTC[int]{
@@ -1620,10 +2276,50 @@ func Test_MustFind(t *testing.T) {
 	})
 }
 
-func Benchmark_Of(b *testing.B) {
+func BenchmarkOf(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		Of(123)
 	}
+}
+
+func ExampleOf_int() {
+	example.Print(Of(0))
+	example.Print(Of(123))
+
+	// Output:
+	// 0
+	// 123
+}
+
+func ExampleOf_int_pointer() {
+	example.Print(Of((*int)(nil)))
+	example.Print(Of(ptrs.ZeroInt()))
+	example.Print(Of(ptrs.Int(123)))
+
+	// Output:
+	// <nil>
+	// &0
+	// &123
+}
+
+func ExampleOf_string() {
+	example.Print(Of(""))
+	example.Print(Of("abc"))
+
+	// Output:
+	// ""
+	// "abc"
+}
+
+func ExampleOf_string_pointer() {
+	example.Print(Of((*string)(nil)))
+	example.Print(Of(ptrs.ZeroString()))
+	example.Print(Of(ptrs.String("abc")))
+
+	// Output:
+	// <nil>
+	// &""
+	// &"abc"
 }
 
 type ofTC[T any] struct {
@@ -1638,9 +2334,15 @@ func (tc ofTC[T]) Test(t *testing.T) {
 	assert.True(t, present, "expected presence")
 }
 
-func Test_Of(t *testing.T) {
+func TestOf(t *testing.T) {
 	test.RunCases(t, test.Cases{
 		// Test cases for documented examples
+		"with zero int": ofTC[int]{
+			value: 0,
+		},
+		"with non-zero int": ofTC[int]{
+			value: 123,
+		},
 		"with nil int pointer": ofTC[*int]{
 			value: nil,
 		},
@@ -1650,11 +2352,11 @@ func Test_Of(t *testing.T) {
 		"with non-zero int pointer": ofTC[*int]{
 			value: ptrs.Int(123),
 		},
-		"with zero int": ofTC[int]{
-			value: 0,
+		"with zero string": ofTC[string]{
+			value: "",
 		},
-		"with non-zero int": ofTC[int]{
-			value: 123,
+		"with non-zero string": ofTC[string]{
+			value: "abc",
 		},
 		"with nil string pointer": ofTC[*string]{
 			value: nil,
@@ -1665,21 +2367,55 @@ func Test_Of(t *testing.T) {
 		"with non-zero string pointer": ofTC[*string]{
 			value: ptrs.String("abc"),
 		},
-		"with zero string": ofTC[string]{
-			value: "",
-		},
-		"with non-zero string": ofTC[string]{
-			value: "abc",
-		},
 		// Other test cases...
 	})
 }
 
-func Benchmark_OfNillable(b *testing.B) {
+func BenchmarkOfNillable(b *testing.B) {
 	value := 123
 	for i := 0; i < b.N; i++ {
 		OfNillable(&value)
 	}
+}
+
+func ExampleOfNillable_int() {
+	example.Print(OfNillable(0))
+	example.Print(OfNillable(123))
+
+	// Output:
+	// 0
+	// 123
+}
+
+func ExampleOfNillable_int_pointer() {
+	example.Print(OfNillable((*int)(nil)))
+	example.Print(OfNillable(ptrs.ZeroInt()))
+	example.Print(OfNillable(ptrs.Int(123)))
+
+	// Output:
+	// <empty>
+	// &0
+	// &123
+}
+
+func ExampleOfNillable_string() {
+	example.Print(OfNillable(""))
+	example.Print(OfNillable("abc"))
+
+	// Output:
+	// ""
+	// "abc"
+}
+
+func ExampleOfNillable_string_pointer() {
+	example.Print(OfNillable((*string)(nil)))
+	example.Print(OfNillable(ptrs.ZeroString()))
+	example.Print(OfNillable(ptrs.String("abc")))
+
+	// Output:
+	// <empty>
+	// &""
+	// &"abc"
 }
 
 type ofNillableTC[T any] struct {
@@ -1695,9 +2431,17 @@ func (tc ofNillableTC[T]) Test(t *testing.T) {
 	assert.Equal(t, tc.expectPresent, present, "unexpected value presence")
 }
 
-func Test_OfNillable(t *testing.T) {
+func TestOfNillable(t *testing.T) {
 	test.RunCases(t, test.Cases{
 		// Test cases for documented examples
+		"with zero int": ofNillableTC[int]{
+			value:         0,
+			expectPresent: true,
+		},
+		"with non-zero int": ofNillableTC[int]{
+			value:         123,
+			expectPresent: true,
+		},
 		"with nil int pointer": ofNillableTC[*int]{
 			value:         nil,
 			expectPresent: false,
@@ -1710,12 +2454,12 @@ func Test_OfNillable(t *testing.T) {
 			value:         ptrs.Int(123),
 			expectPresent: true,
 		},
-		"with zero int": ofNillableTC[int]{
-			value:         0,
+		"with zero string": ofNillableTC[string]{
+			value:         "",
 			expectPresent: true,
 		},
-		"with non-zero int": ofNillableTC[int]{
-			value:         123,
+		"with non-zero string": ofNillableTC[string]{
+			value:         "abc",
 			expectPresent: true,
 		},
 		"with nil string pointer": ofNillableTC[*string]{
@@ -1730,22 +2474,32 @@ func Test_OfNillable(t *testing.T) {
 			value:         ptrs.String("abc"),
 			expectPresent: true,
 		},
-		"with zero string": ofNillableTC[string]{
-			value:         "",
-			expectPresent: true,
-		},
-		"with non-zero string": ofNillableTC[string]{
-			value:         "abc",
-			expectPresent: true,
-		},
 		// Other test cases...
 	})
 }
 
-func Benchmark_OfPointer(b *testing.B) {
+func BenchmarkOfPointer(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		OfPointer(123)
 	}
+}
+
+func ExampleOfPointer_int() {
+	example.Print(OfPointer(0))
+	example.Print(OfPointer(123))
+
+	// Output:
+	// &0
+	// &123
+}
+
+func ExampleOfPointer_string() {
+	example.Print(OfPointer(""))
+	example.Print(OfPointer("abc"))
+
+	// Output:
+	// &""
+	// &"abc"
 }
 
 type ofPointerTC[T any] struct {
@@ -1761,7 +2515,7 @@ func (tc ofPointerTC[T]) Test(t *testing.T) {
 	assert.True(t, present, "expected presence")
 }
 
-func Test_OfPointer(t *testing.T) {
+func TestOfPointer(t *testing.T) {
 	test.RunCases(t, test.Cases{
 		// Test cases for documented examples
 		"with zero int": ofPointerTC[int]{
@@ -1780,10 +2534,50 @@ func Test_OfPointer(t *testing.T) {
 	})
 }
 
-func Benchmark_OfZeroable(b *testing.B) {
+func BenchmarkOfZeroable(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		OfZeroable(123)
 	}
+}
+
+func ExampleOfZeroable_int() {
+	example.Print(OfZeroable(0))
+	example.Print(OfZeroable(123))
+
+	// Output:
+	// <empty>
+	// 123
+}
+
+func ExampleOfZeroable_int_pointer() {
+	example.Print(OfZeroable((*int)(nil)))
+	example.Print(OfZeroable(ptrs.ZeroInt()))
+	example.Print(OfZeroable(ptrs.Int(123)))
+
+	// Output:
+	// <empty>
+	// &0
+	// &123
+}
+
+func ExampleOfZeroable_string() {
+	example.Print(OfZeroable(""))
+	example.Print(OfZeroable("abc"))
+
+	// Output:
+	// <empty>
+	// "abc"
+}
+
+func ExampleOfZeroable_string_pointer() {
+	example.Print(OfZeroable((*string)(nil)))
+	example.Print(OfZeroable(ptrs.ZeroString()))
+	example.Print(OfZeroable(ptrs.String("abc")))
+
+	// Output:
+	// <empty>
+	// &""
+	// &"abc"
 }
 
 type ofZeroableTC[T any] struct {
@@ -1799,9 +2593,17 @@ func (tc ofZeroableTC[T]) Test(t *testing.T) {
 	assert.Equal(t, tc.expectPresent, present, "unexpected value presence")
 }
 
-func Test_OfZeroable(t *testing.T) {
+func TestOfZeroable(t *testing.T) {
 	test.RunCases(t, test.Cases{
 		// Test cases for documented examples
+		"with zero int": ofZeroableTC[int]{
+			value:         0,
+			expectPresent: false,
+		},
+		"with non-zero int": ofZeroableTC[int]{
+			value:         123,
+			expectPresent: true,
+		},
 		"with nil int pointer": ofZeroableTC[*int]{
 			value:         nil,
 			expectPresent: false,
@@ -1814,12 +2616,12 @@ func Test_OfZeroable(t *testing.T) {
 			value:         ptrs.Int(123),
 			expectPresent: true,
 		},
-		"with zero int": ofZeroableTC[int]{
-			value:         0,
+		"with zero string": ofZeroableTC[string]{
+			value:         "",
 			expectPresent: false,
 		},
-		"with non-zero int": ofZeroableTC[int]{
-			value:         123,
+		"with non-zero string": ofZeroableTC[string]{
+			value:         "abc",
 			expectPresent: true,
 		},
 		"with nil string pointer": ofZeroableTC[*string]{
@@ -1834,23 +2636,37 @@ func Test_OfZeroable(t *testing.T) {
 			value:         ptrs.String("abc"),
 			expectPresent: true,
 		},
-		"with zero string": ofZeroableTC[string]{
-			value:         "",
-			expectPresent: false,
-		},
-		"with non-zero string": ofZeroableTC[string]{
-			value:         "abc",
-			expectPresent: true,
-		},
 		// Other test cases...
 	})
 }
 
-func Benchmark_RequireAny(b *testing.B) {
+func BenchmarkRequireAny(b *testing.B) {
 	opts := []Optional[int]{Empty[int](), Of(0), Of(123)}
 	for i := 0; i < b.N; i++ {
 		_ = RequireAny(opts...)
 	}
+}
+
+func ExampleRequireAny_int() {
+	example.PrintValues(RequireAny(Empty[int](), Of(0), Of(123)))
+
+	// Output: [0 123]
+}
+
+func ExampleRequireAny_panic() {
+	defer func() {
+		fmt.Println(recover())
+	}()
+
+	RequireAny(Empty[int]())
+
+	// Output: go-optional: value not present
+}
+
+func ExampleRequireAny_string() {
+	example.PrintValues(RequireAny(Empty[string](), Of(""), Of("abc")))
+
+	// Output: ["" "abc"]
 }
 
 type requireAnyTC[T any] struct {
@@ -1874,7 +2690,7 @@ func (tc requireAnyTC[T]) Test(t *testing.T) {
 	}
 }
 
-func Test_RequireAny(t *testing.T) {
+func TestRequireAny(t *testing.T) {
 	test.RunCases(t, test.Cases{
 		// Test cases for documented examples
 		"with no int Optionals": requireAnyTC[int]{
@@ -1911,7 +2727,7 @@ func Test_RequireAny(t *testing.T) {
 	})
 }
 
-func Benchmark_TryFlatMap(b *testing.B) {
+func BenchmarkTryFlatMap(b *testing.B) {
 	toString := func(value int) (Optional[string], error) {
 		if value == 0 {
 			return Empty[string](), nil
@@ -1922,6 +2738,50 @@ func Benchmark_TryFlatMap(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		_, _ = TryFlatMap(opt, toString)
 	}
+}
+
+func ExampleTryFlatMap_int() {
+	mapper := func(value int) (Optional[string], error) {
+		if value == 0 {
+			return Empty[string](), nil
+		}
+		return Of(strconv.FormatInt(int64(value), 10)), nil
+	}
+
+	example.PrintTry(TryFlatMap(Empty[int](), mapper))
+	example.PrintTry(TryFlatMap(Of(0), mapper))
+	example.PrintTry(TryFlatMap(Of(123), mapper))
+
+	// Output:
+	// <empty> <nil>
+	// <empty> <nil>
+	// "123" <nil>
+}
+
+func ExampleTryFlatMap_string() {
+	mapper := func(value string) (Optional[int], error) {
+		if value == "" {
+			return Empty[int](), nil
+		}
+		i, err := strconv.ParseInt(value, 10, 0)
+		if err != nil {
+			return Empty[int](), err
+		}
+		return OfZeroable(int(i)), nil
+	}
+
+	example.PrintTry(TryFlatMap(Empty[string](), mapper))
+	example.PrintTry(TryFlatMap(Of(""), mapper))
+	example.PrintTry(TryFlatMap(Of("0"), mapper))
+	example.PrintTry(TryFlatMap(Of("123"), mapper))
+	example.PrintTry(TryFlatMap(Of("abc"), mapper))
+
+	// Output:
+	// <empty> <nil>
+	// <empty> <nil>
+	// <empty> <nil>
+	// 123 <nil>
+	// <empty> "strconv.ParseInt: parsing \"abc\": invalid syntax"
 }
 
 type tryFatMapTC[T, M any] struct {
@@ -1941,7 +2801,7 @@ func (tc tryFatMapTC[T, M]) Test(t *testing.T) {
 	assert.Equal(t, tc.expectPresent, present, "unexpected value presence")
 }
 
-func Test_TryFlatMap(t *testing.T) {
+func TestTryFlatMap(t *testing.T) {
 	toInt := func(value string) (Optional[int], error) {
 		if value == "" {
 			return Empty[int](), nil
@@ -2007,7 +2867,7 @@ func Test_TryFlatMap(t *testing.T) {
 	})
 }
 
-func Benchmark_TryMap(b *testing.B) {
+func BenchmarkTryMap(b *testing.B) {
 	toString := func(value int) (string, error) {
 		return strconv.FormatInt(int64(value), 10), nil
 	}
@@ -2015,6 +2875,39 @@ func Benchmark_TryMap(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		_, _ = TryMap(opt, toString)
 	}
+}
+
+func ExampleTryMap_int() {
+	mapper := func(value int) (string, error) {
+		return strconv.FormatInt(int64(value), 10), nil
+	}
+
+	example.PrintTry(TryMap(Empty[int](), mapper))
+	example.PrintTry(TryMap(Of(0), mapper))
+	example.PrintTry(TryMap(Of(123), mapper))
+
+	// Output:
+	// <empty> <nil>
+	// "0" <nil>
+	// "123" <nil>
+}
+
+func ExampleTryMap_string() {
+	mapper := func(value string) (int, error) {
+		i, err := strconv.ParseInt(value, 10, 0)
+		return int(i), err
+	}
+
+	example.PrintTry(TryMap(Empty[string](), mapper))
+	example.PrintTry(TryMap(Of("0"), mapper))
+	example.PrintTry(TryMap(Of("123"), mapper))
+	example.PrintTry(TryMap(Of("abc"), mapper))
+
+	// Output:
+	// <empty> <nil>
+	// 0 <nil>
+	// 123 <nil>
+	// <empty> "strconv.ParseInt: parsing \"abc\": invalid syntax"
 }
 
 type tryMapTC[T, M any] struct {
@@ -2034,7 +2927,7 @@ func (tc tryMapTC[T, M]) Test(t *testing.T) {
 	assert.Equal(t, tc.expectPresent, present, "unexpected value presence")
 }
 
-func Test_TryMap(t *testing.T) {
+func TestTryMap(t *testing.T) {
 	toInt := func(value string) (int, error) {
 		i, err := strconv.ParseInt(value, 10, 0)
 		return int(i), err

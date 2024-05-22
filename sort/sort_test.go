@@ -22,13 +22,15 @@ package sort
 
 import (
 	"cmp"
+	"fmt"
 	"github.com/neocotic/go-optional"
+	"github.com/neocotic/go-optional/internal/example"
 	"github.com/neocotic/go-optional/internal/test"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
 
-func Benchmark_Asc(b *testing.B) {
+func BenchmarkAsc(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		Asc([]optional.Optional[int]{
 			optional.Empty[int](),
@@ -44,6 +46,22 @@ func Benchmark_Asc(b *testing.B) {
 	}
 }
 
+func ExampleAsc_int() {
+	opts := []optional.Optional[int]{optional.Of(0), optional.Of(123), optional.Empty[int]()}
+	Asc(opts)
+	example.PrintSlice(opts)
+
+	// Output: [<empty> 0 123]
+}
+
+func ExampleAsc_string() {
+	opts := []optional.Optional[string]{optional.Of(""), optional.Of("abc"), optional.Empty[string]()}
+	Asc(opts)
+	example.PrintSlice(opts)
+
+	// Output: [<empty> "" "abc"]
+}
+
 type ascTC[T cmp.Ordered] struct {
 	opts   []optional.Optional[T]
 	expect []optional.Optional[T]
@@ -55,7 +73,7 @@ func (tc ascTC[T]) Test(t *testing.T) {
 	assert.Equal(t, tc.expect, tc.opts, "unexpected optionals")
 }
 
-func Test_Asc(t *testing.T) {
+func TestAsc(t *testing.T) {
 	test.RunCases(t, test.Cases{
 		// Test cases for documented examples
 		"with int Optionals": ascTC[int]{
@@ -86,7 +104,7 @@ func Test_Asc(t *testing.T) {
 	})
 }
 
-func Benchmark_Desc(b *testing.B) {
+func BenchmarkDesc(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		Desc([]optional.Optional[int]{
 			optional.Empty[int](),
@@ -102,6 +120,22 @@ func Benchmark_Desc(b *testing.B) {
 	}
 }
 
+func ExampleDesc_int() {
+	opts := []optional.Optional[int]{optional.Of(0), optional.Of(123), optional.Empty[int]()}
+	Desc(opts)
+	example.PrintSlice(opts)
+
+	// Output: [123 0 <empty>]
+}
+
+func ExampleDesc_string() {
+	opts := []optional.Optional[string]{optional.Of(""), optional.Of("abc"), optional.Empty[string]()}
+	Desc(opts)
+	example.PrintSlice(opts)
+
+	// Output: ["abc" "" <empty>]
+}
+
 type descTC[T cmp.Ordered] struct {
 	opts   []optional.Optional[T]
 	expect []optional.Optional[T]
@@ -113,7 +147,7 @@ func (tc descTC[T]) Test(t *testing.T) {
 	assert.Equal(t, tc.expect, tc.opts, "unexpected optionals")
 }
 
-func Test_Desc(t *testing.T) {
+func TestDesc(t *testing.T) {
 	test.RunCases(t, test.Cases{
 		// Test cases for documented examples
 		"with int Optionals": descTC[int]{
@@ -144,7 +178,7 @@ func Test_Desc(t *testing.T) {
 	})
 }
 
-func Benchmark_IsAsc(b *testing.B) {
+func BenchmarkIsAsc(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		_ = IsAsc([]optional.Optional[int]{
 			optional.Empty[int](),
@@ -160,6 +194,28 @@ func Benchmark_IsAsc(b *testing.B) {
 	}
 }
 
+func ExampleIsAsc_int() {
+	fmt.Println(IsAsc(([]optional.Optional[int])(nil)))
+	fmt.Println(IsAsc([]optional.Optional[int]{optional.Of(0), optional.Of(123), optional.Empty[int]()}))
+	fmt.Println(IsAsc([]optional.Optional[int]{optional.Empty[int](), optional.Of(0), optional.Of(123)}))
+
+	// Output:
+	// true
+	// false
+	// true
+}
+
+func ExampleIsAsc_string() {
+	fmt.Println(IsAsc(([]optional.Optional[string])(nil)))
+	fmt.Println(IsAsc([]optional.Optional[string]{optional.Of(""), optional.Of("abc"), optional.Empty[string]()}))
+	fmt.Println(IsAsc([]optional.Optional[string]{optional.Empty[string](), optional.Of(""), optional.Of("abc")}))
+
+	// Output:
+	// true
+	// false
+	// true
+}
+
 type isAscTC[T cmp.Ordered] struct {
 	opts   []optional.Optional[T]
 	expect bool
@@ -171,7 +227,7 @@ func (tc isAscTC[T]) Test(t *testing.T) {
 	assert.Equalf(t, tc.expect, actual, "unexpected sorting: %v", tc.opts)
 }
 
-func Test_IsAsc(t *testing.T) {
+func TestIsAsc(t *testing.T) {
 	test.RunCases(t, test.Cases{
 		// Test cases for documented examples
 		"with no int Optionals": isAscTC[int]{
@@ -216,7 +272,7 @@ func Test_IsAsc(t *testing.T) {
 	})
 }
 
-func Benchmark_IsDesc(b *testing.B) {
+func BenchmarkIsDesc(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		_ = IsDesc([]optional.Optional[int]{
 			optional.Of(123),
@@ -232,6 +288,28 @@ func Benchmark_IsDesc(b *testing.B) {
 	}
 }
 
+func ExampleIsDesc_int() {
+	fmt.Println(IsDesc(([]optional.Optional[int])(nil)))
+	fmt.Println(IsDesc([]optional.Optional[int]{optional.Of(0), optional.Of(123), optional.Empty[int]()}))
+	fmt.Println(IsDesc([]optional.Optional[int]{optional.Of(123), optional.Of(0), optional.Empty[int]()}))
+
+	// Output:
+	// true
+	// false
+	// true
+}
+
+func ExampleIsDesc_string() {
+	fmt.Println(IsDesc(([]optional.Optional[string])(nil)))
+	fmt.Println(IsDesc([]optional.Optional[string]{optional.Of(""), optional.Of("abc"), optional.Empty[string]()}))
+	fmt.Println(IsDesc([]optional.Optional[string]{optional.Of("abc"), optional.Of(""), optional.Empty[string]()}))
+
+	// Output:
+	// true
+	// false
+	// true
+}
+
 type isDescTC[T cmp.Ordered] struct {
 	opts   []optional.Optional[T]
 	expect bool
@@ -243,7 +321,7 @@ func (tc isDescTC[T]) Test(t *testing.T) {
 	assert.Equalf(t, tc.expect, actual, "unexpected sorting: %v", tc.opts)
 }
 
-func Test_IsDesc(t *testing.T) {
+func TestIsDesc(t *testing.T) {
 	test.RunCases(t, test.Cases{
 		// Test cases for documented examples
 		"with no int Optionals": isDescTC[int]{

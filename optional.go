@@ -43,7 +43,9 @@ import (
 //   - xml: seems to work perfectly as expected
 //   - yaml: it's recommended to include the "omitempty" tag option
 //
-// That said; Optional is intended more for reading input rather than writing output.
+// That said; Optional is intended more for reading input rather than writing output. An important note for
+// unmarshalling is that yaml, unlike json, will skip an Optional struct field that has been given an explicit null
+// value, resulting in an empty Optional.
 type Optional[T any] struct {
 	// present is whether value was explicitly set.
 	present bool
@@ -66,31 +68,13 @@ var (
 const emptyString = "<empty>"
 
 // errNotPresent is used when panicking.
-var errNotPresent = fmt.Errorf("optional value not present")
+var errNotPresent = fmt.Errorf("go-optional: value not present")
 
 // Filter returns the Optional if it has a value present that the given function returns true for, otherwise an empty
 // Optional.
 //
 // Warning: While fn will only be called if Optional has a value present, that value may still be nil or the zero value
 // for T.
-//
-// For example;
-//
-//	isPos := func(value int) bool {
-//		return value >= 0
-//	}
-//	Empty[int]().Filter(isPos)  // Empty[int]()
-//	Of(-123).Filter(isPos)      // Empty[int]()
-//	Of(0).Filter(isPos)         // Of(0)
-//	Of(123).Filter(isPos)       // Of(123)
-//
-//	isLower := func(value string) bool {
-//		return !strings.ContainsFunc(value, unicode.IsUpper)
-//	}
-//	Empty[string]().Filter(isLower)  // Empty[string]()
-//	Of("ABC").Filter(isLower)        // Empty[string]()
-//	Of("").Filter(isLower)           // Of("")
-//	Of("abc").Filter(isLower)        // Of("abc")
 func (o Optional[T]) Filter(fn func(value T) bool) Optional[T] {
 	if o.present && fn(o.value) {
 		return o
@@ -99,16 +83,6 @@ func (o Optional[T]) Filter(fn func(value T) bool) Optional[T] {
 }
 
 // Get returns the value of the Optional and whether it is present.
-//
-// For example;
-//
-//	Empty[int]().Get()  // 0, false
-//	Of(0).Get()         // 0, true
-//	Of(123).Get()       // 123, true
-//
-//	Empty[string]().Get()  // "", false
-//	Of("").Get()           // "", true
-//	Of("abc").Get()        // "abc", true
 func (o Optional[T]) Get() (T, bool) {
 	return o.value, o.present
 }
@@ -117,22 +91,6 @@ func (o Optional[T]) Get() (T, bool) {
 //
 // Warning: While fn will only be called if Optional has a value present, that value may still be nil or the zero value
 // for T.
-//
-// For example;
-//
-//	intFunc := func(value int) {
-//		fmt.Println(value)
-//	}
-//	Empty[int]().IfPresent(intFunc)  // Does nothing
-//	Of(0).IfPresent(intFunc)         // Prints "0"
-//	Of(123).IfPresent(intFunc)       // Prints "123"
-//
-//	stringFunc := func(value string) {
-//		fmt.Println(value)
-//	}
-//	Empty[string]().IfPresent(stringFunc)  // Does nothing
-//	Of("").IfPresent(stringFunc)           // Prints ""
-//	Of("abc").IfPresent(stringFunc)        // Prints "abc"
 func (o Optional[T]) IfPresent(fn func(value T)) {
 	if o.present {
 		fn(o.value)
@@ -144,31 +102,11 @@ func (o Optional[T]) IfPresent(fn func(value T)) {
 // IsEmpty is effectively the inverse of IsPresent. It's important to note that IsEmpty will not return true if the
 // underlying value of the Optional is equal to the zero value for T and in no way checks the length of the underlying
 // value but instead only if the value is absent.
-//
-// For example;
-//
-//	Empty[int]().IsEmpty()  // true
-//	Of(0).IsEmpty()         // false
-//	Of(123).IsEmpty()       // false
-//
-//	Empty[string]().IsEmpty()  // true
-//	Of("").IsEmpty()           // false
-//	Of("abc").IsEmpty()        // false
 func (o Optional[T]) IsEmpty() bool {
 	return !o.present
 }
 
 // IsPresent returns whether the value of the Optional is present. That is; it has been explicitly set.
-//
-// For example;
-//
-//	Empty[int]().IsPresent()  // false
-//	Of(0).IsPresent()         // true
-//	Of(123).IsPresent()       // true
-//
-//	Empty[string]().IsPresent()  // false
-//	Of("").IsPresent()           // true
-//	Of("abc").IsPresent()        // true
 func (o Optional[T]) IsPresent() bool {
 	return o.present
 }
@@ -178,16 +116,6 @@ func (o Optional[T]) IsPresent() bool {
 // IsZero is effectively the inverse of IsPresent and an alternative for IsEmpty that conforms to the yaml.IsZeroer
 // interface. It's important to note that IsZero will not return true if the underlying value of the Optional is equal
 // to the zero value for T but instead only if the value is absent.
-//
-// For example;
-//
-//	Empty[int]().IsZero()  // true
-//	Of(0).IsZero()         // false
-//	Of(123).IsZero()       // false
-//
-//	Empty[string]().IsZero()  // true
-//	Of("").IsZero()           // false
-//	Of("abc").IsZero()        // false
 func (o Optional[T]) IsZero() bool {
 	return !o.present
 }
@@ -231,18 +159,6 @@ func (o Optional[T]) MarshalYAML() (any, error) {
 }
 
 // OrElse returns the value of the Optional if present, otherwise other.
-//
-// For example;
-//
-//	defaultInt := -1
-//	Empty[int]().OrElse(defaultInt)  // -1
-//	Of(0).OrElse(defaultInt)         // 0
-//	Of(123).OrElse(defaultInt)       // 123
-//
-//	defaultString := "unknown"
-//	Empty[string]().OrElse(defaultString)  // "unknown"
-//	Of("").OrElse(defaultString)           // ""
-//	Of("abc").OrElse(defaultString)        // "abc"
 func (o Optional[T]) OrElse(other T) T {
 	if o.present {
 		return o.value
@@ -252,22 +168,6 @@ func (o Optional[T]) OrElse(other T) T {
 
 // OrElseGet returns the value of the Optional if present, otherwise calls other and returns its return value. This is
 // recommended over OrElse in cases where a default value is expensive to initialize so lazy-initializes it.
-//
-// For example;
-//
-//	defaultInt := func() int {
-//		return -1
-//	}
-//	Empty[int]().OrElseGet(defaultFunc)  // -1
-//	Of(0).OrElseGet(defaultFunc)         // 0
-//	Of(123).OrElseGet(defaultFunc)       // 123
-//
-//	defaultString := func() string {
-//		return "unknown"
-//	}
-//	Empty[string]().OrElseGet(defaultString)  // "unknown"
-//	Of("").OrElseGet(defaultString)           // ""
-//	Of("abc").OrElseGet(defaultString)        // "abc"
 func (o Optional[T]) OrElseGet(other func() T) T {
 	if o.present {
 		return o.value
@@ -279,29 +179,6 @@ func (o Optional[T]) OrElseGet(other func() T) T {
 // is recommended over OrElse in cases where a default value is expensive to initialize so lazy-initializes it. The
 // difference from OrElseGet is that the given function may return an error which, if not nil, will be returned by
 // OrElseTryGet.
-//
-// For example;
-//
-//	defaultInt := func() (int, error) {
-//		return -1, nil
-//	}
-//	Empty[int]().OrElseTryGet(defaultFunc)  // -1, nil
-//	Of(0).OrElseTryGet(defaultFunc)         // 0, nil
-//	Of(123).OrElseTryGet(defaultFunc)       // 123, nil
-//
-//	var defaultStringUsed bool
-//	errDefaultStringUsed := errors.New("default string already used")
-//	defaultString := func() (string, error) {
-//		if defaultStringUsed {
-//			return "", errDefaultStringUsed
-//		}
-//		defaultStringUsed = true
-//		return "unknown", nil
-//	}
-//	Empty[string]().OrElseTryGet(defaultString)  // "unknown", nil
-//	Of("").OrElseTryGet(defaultString)           // "", nil
-//	Of("abc").OrElseTryGet(defaultString)        // "abc", nil
-//	Empty[string]().OrElseTryGet(defaultString)  // "", errDefaultStringUsed
 func (o Optional[T]) OrElseTryGet(other func() (T, error)) (T, error) {
 	if o.present {
 		return o.value, nil
@@ -310,16 +187,6 @@ func (o Optional[T]) OrElseTryGet(other func() (T, error)) (T, error) {
 }
 
 // Require returns the value of the Optional only if present, otherwise panics.
-//
-// For example;
-//
-//	Empty[int]().Require()  // panics
-//	Of(0).Require()         // 0
-//	Of(123).Require()       // 123
-//
-//	Empty[string]().Require()  // panics
-//	Of("").Require()           // ""
-//	Of("abc").Require()        // "abc"
 func (o Optional[T]) Require() T {
 	if o.present {
 		return o.value
@@ -328,16 +195,6 @@ func (o Optional[T]) Require() T {
 }
 
 // String returns a string representation of the underlying value, if any.
-//
-// For example;
-//
-//	Empty[int]().String()  // "<empty>"
-//	Of(0).String()         // "0"
-//	Of(123).String()       // "123"
-//
-//	Empty[string]().String()  // "<empty>"
-//	Of("").String()           // ""
-//	Of("abc").String()        // "abc"
 func (o Optional[T]) String() string {
 	if o.present {
 		return fmt.Sprint(o.value)
@@ -393,18 +250,6 @@ func (o *Optional[T]) UnmarshalYAML(value *yaml.Node) error {
 //
 // For floating-point types, a NaN is considered less than any non-NaN, a NaN is considered equal to a NaN, and -0.0 is
 // equal to 0.0.
-//
-// For example;
-//
-//	Compare(Empty[int](), Of(0))  // -1
-//	Compare(Of(0), Of(123))       // -1
-//
-//	Compare(Empty[int](), Empty[int]())  // 0
-//	Compare(Of(0), Of(0))                // 0
-//	Compare(Of(123), Of(123))            // 0
-//
-//	Compare(Of(0), Empty[int]())  // 1
-//	Compare(Of(123), Of(0))       // 1
 func Compare[T cmp.Ordered](x, y Optional[T]) int {
 	switch {
 	case x.present && y.present:
@@ -419,27 +264,11 @@ func Compare[T cmp.Ordered](x, y Optional[T]) int {
 }
 
 // Empty returns an Optional with no value. It's the equivalent of using a zero value Optional.
-//
-// For example;
-//
-//	Empty[int]().Get()  // 0, false
-//
-//	Empty[string]().Get()  // "", false
 func Empty[T any]() Optional[T] {
 	return Optional[T]{}
 }
 
 // Find returns the first given Optional that has a value present, otherwise an empty Optional.
-//
-// For example;
-//
-//	Find[int]()                         // Empty[int]()
-//	Find(Empty[int]())                  // Empty[int]()
-//	Find(Empty[int](), Of(0), Of(123))  // Of(0)
-//
-//	Find[string]()                            // Empty[string]()
-//	Find(Empty[string]())                     // Empty[string]()
-//	Find(Empty[string](), Of("abc"), Of(""))  // Of("abc")
 func Find[T any](opts ...Optional[T]) Optional[T] {
 	for _, opt := range opts {
 		if opt.present {
@@ -454,33 +283,6 @@ func Find[T any](opts ...Optional[T]) Optional[T] {
 //
 // Warning: While fn will only be called if opt has a value present, that value may still be nil or the zero value for
 // T.
-//
-// For example;
-//
-//	toString := func(value int) Optional[string] {
-//		if value == 0 {
-//			return Empty[string]()
-//		}
-//		return Of(strconv.FormatInt(int64(value), 10))
-//	}
-//	FlatMap(Empty[int](), toString)  // Empty[string]()
-//	FlatMap(Of(0), toString)         // Empty[string]()
-//	FlatMap(Of(123), toString)       // Of("123")
-//
-//	toInt := func(value string) Optional[int] {
-//		if value == "" {
-//			return Empty[int]()
-//		}
-//		i, err := strconv.ParseInt(value, 10, 0)
-//		if err != nil {
-//			panic(err)
-//		}
-//		return OfZeroable(int(i))
-//	}
-//	FlatMap(Empty[string](), toInt)  // Empty[int]()
-//	FlatMap(Of(""), toInt)           // Empty[int]()
-//	FlatMap(Of("0"), toInt)          // Empty[int]()
-//	FlatMap(Of("123"), toInt)        // Of(123)
 func FlatMap[T, M any](opt Optional[T], fn func(value T) Optional[M]) Optional[M] {
 	if !opt.present {
 		return Optional[M]{}
@@ -489,16 +291,6 @@ func FlatMap[T, M any](opt Optional[T], fn func(value T) Optional[M]) Optional[M
 }
 
 // GetAny returns a slice containing only the values of any given Optional that has a value present, where possible.
-//
-// For example;
-//
-//	GetAny[int]()                         // nil
-//	GetAny(Empty[int]())                  // nil
-//	GetAny(Empty[int](), Of(0), Of(123))  // []int{0, 123}
-//
-//	GetAny[string]()                            // nil
-//	GetAny(Empty[string]())                     // nil
-//	GetAny(Empty[string](), Of("abc"), Of(""))  // []string{"abc", ""}
 func GetAny[T any](opts ...Optional[T]) []T {
 	var filtered []T
 	for _, opt := range opts {
@@ -514,26 +306,6 @@ func GetAny[T any](opts ...Optional[T]) []T {
 //
 // Warning: While fn will only be called if opt has a value present, that value may still be nil or the zero value for
 // T.
-//
-// For example;
-//
-//	toString := func(value int) string {
-//		return strconv.FormatInt(int64(value), 10)
-//	}
-//	Map(Empty[int](), toString)  // Empty[string]()
-//	Map(Of(0), toString)         // Of("0")
-//	Map(Of(123), toString)       // Of("123")
-//
-//	toInt := func(value string) int {
-//		i, err := strconv.ParseInt(value, 10, 0)
-//		if err != nil {
-//			panic(err)
-//		}
-//		return int(i)
-//	}
-//	Map(Empty[string](), toInt)  // Empty[int]()
-//	Map(Of("0"), toInt)          // Of(0)
-//	Map(Of("123"), toInt)        // Of(123)
 func Map[T, M any](opt Optional[T], fn func(value T) M) Optional[M] {
 	if !opt.present {
 		return Optional[M]{}
@@ -545,16 +317,6 @@ func Map[T, M any](opt Optional[T], fn func(value T) M) Optional[M] {
 }
 
 // MustFind returns the value of the first given Optional that has a value present, otherwise panics.
-//
-// For example;
-//
-//	MustFind[int]()                         // panics
-//	MustFind(Empty[int]())                  // panics
-//	MustFind(Empty[int](), Of(0), Of(123))  // 0
-//
-//	MustFind[string]()                            // panics
-//	MustFind(Empty[string]())                     // panics
-//	MustFind(Empty[string](), Of("abc"), Of(""))  // "abc"
 func MustFind[T any](opts ...Optional[T]) T {
 	for _, opt := range opts {
 		if opt.present {
@@ -565,20 +327,6 @@ func MustFind[T any](opts ...Optional[T]) T {
 }
 
 // Of returns an Optional with the given value present.
-//
-// For example;
-//
-//	Of((*int)(nil)).Get()     // nil, true
-//	Of(ptrs.ZeroInt()).Get()  // &0, true
-//	Of(ptrs.Int(123)).Get()   // &123, true
-//	Of(0).Get()               // 0, true
-//	Of(123).Get()             // 123, true
-//
-//	Of((*string)(nil)).Get()      // nil, true
-//	Of(ptrs.ZeroString()).Get()   // &"", true
-//	Of(ptrs.String("abc")).Get()  // &"abc", true
-//	Of("").Get()                  // "", true
-//	Of("abc").Get()               // "abc", true
 func Of[T any](value T) Optional[T] {
 	return Optional[T]{
 		present: true,
@@ -590,22 +338,8 @@ func Of[T any](value T) Optional[T] {
 // treats a nil value as absent and so the returned Optional will be empty.
 //
 // Since T can be any type, whether value is nil is checked reflectively.
-//
-// For example;
-//
-//	OfNillable((*int)(nil)).Get()     // nil, false
-//	OfNillable(ptrs.ZeroInt()).Get()  // &0, true
-//	OfNillable(ptrs.Int(123)).Get()   // &123, true
-//	OfNillable(0).Get()               // 0, true
-//	OfNillable(123).Get()             // 123, true
-//
-//	OfNillable((*string)(nil)).Get()      // nil, false
-//	OfNillable(ptrs.ZeroString()).Get()   // &"", true
-//	OfNillable(ptrs.String("abc")).Get()  // &"abc", true
-//	OfNillable("").Get()                  // "", true
-//	OfNillable("abc").Get()               // "abc", true
 func OfNillable[T any](value T) Optional[T] {
-	if isNil(value) {
+	if isNil(reflect.ValueOf(value)) {
 		return Optional[T]{}
 	}
 	return Optional[T]{
@@ -615,14 +349,6 @@ func OfNillable[T any](value T) Optional[T] {
 }
 
 // OfPointer returns an Optional with the given value present as a pointer.
-//
-// For example;
-//
-//	OfPointer(0).Get()    // &0, true
-//	OfPointer(123).Get()  // &123, true
-//
-//	OfPointer("").Get()     // &"", true
-//	OfPointer("abc").Get()  // &"abc", true
 func OfPointer[T any](value T) Optional[*T] {
 	return Optional[*T]{
 		present: true,
@@ -634,22 +360,8 @@ func OfPointer[T any](value T) Optional[*T] {
 // is; unlike Of, OfZeroable treats a value of zero as absent and so the returned Optional will be empty.
 //
 // Since T can be any type, whether value is equal to the zero value of T is checked reflectively.
-//
-// For example;
-//
-//	OfZeroable((*int)(nil)).Get()     // nil, false
-//	OfZeroable(ptrs.ZeroInt()).Get()  // &0, true
-//	OfZeroable(ptrs.Int(123)).Get()   // &123, true
-//	OfZeroable(0).Get()               // 0, false
-//	OfZeroable(123).Get()             // 123, true
-//
-//	OfZeroable((*string)(nil)).Get()      // nil, false
-//	OfZeroable(ptrs.ZeroString()).Get()   // &"", true
-//	OfZeroable(ptrs.String("abc")).Get()  // &"abc", true
-//	OfZeroable("").Get()                  // "", false
-//	OfZeroable("abc").Get()               // "abc", true
 func OfZeroable[T any](value T) Optional[T] {
-	if isZero(value) {
+	if isZero(reflect.ValueOf(value)) {
 		return Optional[T]{}
 	}
 	return Optional[T]{
@@ -660,16 +372,6 @@ func OfZeroable[T any](value T) Optional[T] {
 
 // RequireAny returns a slice containing only the values of any given Optional that has a value present, panicking only
 // if no Optional could be found with a value present.
-//
-// For example;
-//
-//	RequireAny[int]()                         // panics
-//	RequireAny(Empty[int]())                  // panics
-//	RequireAny(Empty[int](), Of(0), Of(123))  // []int{0, 123}
-//
-//	RequireAny[string]()                            // panics
-//	RequireAny(Empty[string]())                     // panics
-//	RequireAny(Empty[string](), Of("abc"), Of(""))  // []string{"abc", ""}
 func RequireAny[T any](opts ...Optional[T]) []T {
 	var filtered []T
 	for _, opt := range opts {
@@ -689,34 +391,6 @@ func RequireAny[T any](opts ...Optional[T]) []T {
 //
 // Warning: While fn will only be called if opt has a value present, that value may still be nil or the zero value for
 // T.
-//
-// For example;
-//
-//	toString := func(value int) (Optional[string], error) {
-//		if value == 0 {
-//			return Empty[string](), nil
-//		}
-//		return Of(strconv.FormatInt(int64(value), 10)), nil
-//	}
-//	TryFlatMap(Empty[int](), toString)  // Empty[string](), nil
-//	TryFlatMap(Of(0), toString)         // Empty[string](), nil
-//	TryFlatMap(Of(123), toString)       // Of("123"), nil
-//
-//	toInt := func(value string) (Optional[int], error) {
-//		if value == "" {
-//			return Empty[int](), nil
-//		}
-//		i, err := strconv.ParseInt(value, 10, 0)
-//		if err != nil {
-//			return Empty[int](), err
-//		}
-//		return OfZeroable(int(i)), nil
-//	}
-//	TryFlatMap(Empty[string](), toInt)  // Empty[int](), nil
-//	TryFlatMap(Of(""), toInt)           // Empty[int](), nil
-//	TryFlatMap(Of("0"), toInt)          // Empty[int](), nil
-//	TryFlatMap(Of("123"), toInt)        // Of(123), nil
-//	TryFlatMap(Of("abc"), toInt)        // Empty[int](), strconv.NumError
 func TryFlatMap[T, M any](opt Optional[T], fn func(value T) (Optional[M], error)) (Optional[M], error) {
 	if !opt.present {
 		return Optional[M]{}, nil
@@ -730,24 +404,6 @@ func TryFlatMap[T, M any](opt Optional[T], fn func(value T) (Optional[M], error)
 //
 // Warning: While fn will only be called if opt has a value present, that value may still be nil or the zero value for
 // T.
-//
-// For example;
-//
-//	toString := func(value int) (string, error) {
-//		return strconv.FormatInt(int64(value), 10), nil
-//	}
-//	TryMap(Empty[int](), toString)  // Empty[string]()
-//	TryMap(Of(0), toString)         // Of("0")
-//	TryMap(Of(123), toString)       // Of("123")
-//
-//	toInt := func(value string) (int, error) {
-//		i, err := strconv.ParseInt(value, 10, 0)
-//		return int(i), err
-//	}
-//	TryMap(Empty[string](), toInt)  // Empty[int]()
-//	TryMap(Of("0"), toInt)          // Of(0)
-//	TryMap(Of("123"), toInt)        // Of(123)
-//	TryMap(Of("abc"), toInt)        // Empty[int](), strconv.NumError
 func TryMap[T, M any](opt Optional[T], fn func(value T) (M, error)) (Optional[M], error) {
 	if !opt.present {
 		return Optional[M]{}, nil
@@ -765,6 +421,8 @@ func TryMap[T, M any](opt Optional[T], fn func(value T) (M, error)) (Optional[M]
 // isNil returns whether the given value is nil using reflection.
 func isNil(value any) bool {
 	rv := reflect.ValueOf(value)
+// isNil returns whether the given reflect.Value is nil using reflection.
+func isNil(rv reflect.Value) bool {
 	switch rv.Kind() {
 	case reflect.Invalid:
 		return true
@@ -775,8 +433,7 @@ func isNil(value any) bool {
 	}
 }
 
-// isZero returns whether the given value is zero for its type using reflection.
-func isZero(value any) bool {
-	rv := reflect.ValueOf(value)
+// isZero returns whether the given reflect.Value is zero for its type using reflection.
+func isZero(rv reflect.Value) bool {
 	return !rv.IsValid() || rv.IsZero()
 }
