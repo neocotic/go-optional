@@ -35,6 +35,8 @@ jobs:
         run: go get ./...
       - name: Build
         run: go build -v ./...
+      - name: Check format
+        run: diff -u <(echo -n) <(gofmt -d ./)
       - name: Test
         run: go test -v
       - name: Benchmark
