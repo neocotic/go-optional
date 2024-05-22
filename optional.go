@@ -62,6 +62,9 @@ var (
 	_ yaml.Unmarshaler = (*Optional[any])(nil)
 )
 
+// emptyString is returned by Optional.String when no value is present.
+const emptyString = "<empty>"
+
 // errNotPresent is used when panicking.
 var errNotPresent = fmt.Errorf("optional value not present")
 
@@ -328,15 +331,18 @@ func (o Optional[T]) Require() T {
 //
 // For example;
 //
-//	Empty[int]().String()  // "0"
+//	Empty[int]().String()  // "<empty>"
 //	Of(0).String()         // "0"
 //	Of(123).String()       // "123"
 //
-//	Empty[string]().String()  // ""
+//	Empty[string]().String()  // "<empty>"
 //	Of("").String()           // ""
 //	Of("abc").String()        // "abc"
 func (o Optional[T]) String() string {
-	return fmt.Sprint(o.value)
+	if o.present {
+		return fmt.Sprint(o.value)
+	}
+	return emptyString
 }
 
 // UnmarshalJSON unmarshalls the JSON data provided as the value for the Optional. Anytime UnmarshalJSON is called, it

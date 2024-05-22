@@ -916,7 +916,7 @@ func Test_Optional_String(t *testing.T) {
 		// Test cases for documented examples
 		"on empty int Optional": optionalStringTC[int]{
 			opt:    Empty[int](),
-			expect: "0",
+			expect: "<empty>",
 		},
 		"on non-empty int Optional with zero value": optionalStringTC[int]{
 			opt:    Of(0),
@@ -928,7 +928,7 @@ func Test_Optional_String(t *testing.T) {
 		},
 		"on empty string Optional": optionalStringTC[string]{
 			opt:    Empty[string](),
-			expect: "",
+			expect: "<empty>",
 		},
 		"on non-empty string Optional with zero value": optionalStringTC[string]{
 			opt:    Of(""),
