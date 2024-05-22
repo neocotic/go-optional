@@ -28,16 +28,6 @@ import (
 )
 
 // Asc sorts the given slice using optional.Compare in ascending order.
-//
-// For example;
-//
-//	opts := []Optional[int]{Of(0), Of(123), Empty[int]()}
-//	Asc(opts)
-//	opts       // []Optional[int]{Empty[int](), Of(0), Of(123)}
-//
-//	opts := []Optional[string]{Of(""), Of("abc"), Empty[string]()}
-//	Asc(opts)
-//	opts       // []Optional[string]{Empty[string](), Of(""), Of("abc")}
 func Asc[T cmp.Ordered](opts []optional.Optional[T]) {
 	if len(opts) == 0 {
 		return
@@ -48,16 +38,6 @@ func Asc[T cmp.Ordered](opts []optional.Optional[T]) {
 }
 
 // Desc sorts the given slice using optional.Compare in descending order.
-//
-// For example;
-//
-//	opts := []Optional[int]{Of(0), Of(123), Empty[int]()}
-//	Desc(opts)
-//	opts        // []Optional[int]{Of(123), Of(0), Empty[int]()}
-//
-//	opts := []Optional[string]{Of(""), Of("abc"), Empty[string]()}
-//	Desc(opts)
-//	opts        // []Optional[string]{Of("abc"), Of(""), Empty[string]()}
 func Desc[T cmp.Ordered](opts []optional.Optional[T]) {
 	if len(opts) == 0 {
 		return
@@ -68,16 +48,6 @@ func Desc[T cmp.Ordered](opts []optional.Optional[T]) {
 }
 
 // IsAsc returns whether the given slice is sorted using optional.Compare in ascending order.
-//
-// For example;
-//
-//	IsAsc(([]Optional[int])(nil))                         // true
-//	IsAsc([]Optional[int]{Of(0), Of(123), Empty[int]()})  // false
-//	IsAsc([]Optional[int]{Empty[int](), Of(0), Of(123)})  // true
-//
-//	IsAsc(([]Optional[string])(nil))                               // true
-//	IsAsc([]Optional[string]{Of(""), Of("abc"), Empty[string]()})  // false
-//	IsAsc([]Optional[string]{Empty[string](), Of(""), Of("abc")})  // true
 func IsAsc[T cmp.Ordered](opts []optional.Optional[T]) bool {
 	if len(opts) == 0 {
 		return true
@@ -88,16 +58,6 @@ func IsAsc[T cmp.Ordered](opts []optional.Optional[T]) bool {
 }
 
 // IsDesc returns whether the given slice is sorted using optional.Compare in descending order.
-//
-// For example;
-//
-//	IsDesc(([]Optional[int])(nil))                         // true
-//	IsDesc([]Optional[int]{Of(0), Of(123), Empty[int]()})  // false
-//	IsDesc([]Optional[int]{Of(123), Of(0), Empty[int]()})  // true
-//
-//	IsDesc(([]Optional[string])(nil))                               // true
-//	IsDesc([]Optional[string]{Of(""), Of("abc"), Empty[string]()})  // false
-//	IsDesc([]Optional[string]{Of("abc"), Of(""), Empty[string]()})  // true
 func IsDesc[T cmp.Ordered](opts []optional.Optional[T]) bool {
 	if len(opts) == 0 {
 		return true
