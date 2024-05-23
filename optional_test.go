@@ -5570,12 +5570,12 @@ type tryFatMapTC[T, M any] struct {
 
 func (tc tryFatMapTC[T, M]) Test(t *testing.T) {
 	opt, err := TryFlatMap(tc.opt, tc.fn)
-	value, present := opt.Get()
 	if tc.expectError {
 		assert.Error(t, err, "expected error")
 	} else {
 		assert.NoError(t, err, "unexpected error")
 	}
+	value, present := opt.Get()
 	assert.Equal(t, tc.expectValue, value, "unexpected value")
 	assert.Equal(t, tc.expectPresent, present, "unexpected value presence")
 }
@@ -5669,12 +5669,12 @@ type tryMapTC[T, M any] struct {
 
 func (tc tryMapTC[T, M]) Test(t *testing.T) {
 	opt, err := TryMap(tc.opt, tc.fn)
-	value, present := opt.Get()
 	if tc.expectError {
 		assert.Error(t, err, "expected error")
 	} else {
 		assert.NoError(t, err, "unexpected error")
 	}
+	value, present := opt.Get()
 	assert.Equal(t, tc.expectValue, value, "unexpected value")
 	assert.Equal(t, tc.expectPresent, present, "unexpected value presence")
 }
