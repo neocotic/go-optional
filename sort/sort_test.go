@@ -22,9 +22,7 @@ package sort
 
 import (
 	"cmp"
-	"fmt"
 	"github.com/neocotic/go-optional"
-	"github.com/neocotic/go-optional/internal/example"
 	"github.com/neocotic/go-optional/internal/test"
 	"github.com/stretchr/testify/assert"
 	"testing"
@@ -44,22 +42,6 @@ func BenchmarkAsc(b *testing.B) {
 			optional.Empty[int](),
 		})
 	}
-}
-
-func ExampleAsc_int() {
-	opts := []optional.Optional[int]{optional.Of(0), optional.Of(123), optional.Empty[int]()}
-	Asc(opts)
-	example.PrintSlice(opts)
-
-	// Output: [<empty> 0 123]
-}
-
-func ExampleAsc_string() {
-	opts := []optional.Optional[string]{optional.Of(""), optional.Of("abc"), optional.Empty[string]()}
-	Asc(opts)
-	example.PrintSlice(opts)
-
-	// Output: [<empty> "" "abc"]
 }
 
 type ascTC[T cmp.Ordered] struct {
@@ -120,22 +102,6 @@ func BenchmarkDesc(b *testing.B) {
 	}
 }
 
-func ExampleDesc_int() {
-	opts := []optional.Optional[int]{optional.Of(0), optional.Of(123), optional.Empty[int]()}
-	Desc(opts)
-	example.PrintSlice(opts)
-
-	// Output: [123 0 <empty>]
-}
-
-func ExampleDesc_string() {
-	opts := []optional.Optional[string]{optional.Of(""), optional.Of("abc"), optional.Empty[string]()}
-	Desc(opts)
-	example.PrintSlice(opts)
-
-	// Output: ["abc" "" <empty>]
-}
-
 type descTC[T cmp.Ordered] struct {
 	opts   []optional.Optional[T]
 	expect []optional.Optional[T]
@@ -192,28 +158,6 @@ func BenchmarkIsAsc(b *testing.B) {
 			optional.Of(123),
 		})
 	}
-}
-
-func ExampleIsAsc_int() {
-	fmt.Println(IsAsc(([]optional.Optional[int])(nil)))
-	fmt.Println(IsAsc([]optional.Optional[int]{optional.Of(0), optional.Of(123), optional.Empty[int]()}))
-	fmt.Println(IsAsc([]optional.Optional[int]{optional.Empty[int](), optional.Of(0), optional.Of(123)}))
-
-	// Output:
-	// true
-	// false
-	// true
-}
-
-func ExampleIsAsc_string() {
-	fmt.Println(IsAsc(([]optional.Optional[string])(nil)))
-	fmt.Println(IsAsc([]optional.Optional[string]{optional.Of(""), optional.Of("abc"), optional.Empty[string]()}))
-	fmt.Println(IsAsc([]optional.Optional[string]{optional.Empty[string](), optional.Of(""), optional.Of("abc")}))
-
-	// Output:
-	// true
-	// false
-	// true
 }
 
 type isAscTC[T cmp.Ordered] struct {
@@ -286,28 +230,6 @@ func BenchmarkIsDesc(b *testing.B) {
 			optional.Empty[int](),
 		})
 	}
-}
-
-func ExampleIsDesc_int() {
-	fmt.Println(IsDesc(([]optional.Optional[int])(nil)))
-	fmt.Println(IsDesc([]optional.Optional[int]{optional.Of(0), optional.Of(123), optional.Empty[int]()}))
-	fmt.Println(IsDesc([]optional.Optional[int]{optional.Of(123), optional.Of(0), optional.Empty[int]()}))
-
-	// Output:
-	// true
-	// false
-	// true
-}
-
-func ExampleIsDesc_string() {
-	fmt.Println(IsDesc(([]optional.Optional[string])(nil)))
-	fmt.Println(IsDesc([]optional.Optional[string]{optional.Of(""), optional.Of("abc"), optional.Empty[string]()}))
-	fmt.Println(IsDesc([]optional.Optional[string]{optional.Of("abc"), optional.Of(""), optional.Empty[string]()}))
-
-	// Output:
-	// true
-	// false
-	// true
 }
 
 type isDescTC[T cmp.Ordered] struct {
