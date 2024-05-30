@@ -58,7 +58,7 @@ func (tc ascTC[T]) Test(t *testing.T) {
 func TestAsc(t *testing.T) {
 	test.RunCases(t, test.Cases{
 		// Test cases for documented examples
-		"with int Optionals": ascTC[int]{
+		"given int Optionals": ascTC[int]{
 			opts: []optional.Optional[int]{
 				optional.Of(0),
 				optional.Of(123),
@@ -70,7 +70,7 @@ func TestAsc(t *testing.T) {
 				optional.Of(123),
 			},
 		},
-		"with string Optionals": ascTC[string]{
+		"given string Optionals": ascTC[string]{
 			opts: []optional.Optional[string]{
 				optional.Of(""),
 				optional.Of("abc"),
@@ -116,7 +116,7 @@ func (tc descTC[T]) Test(t *testing.T) {
 func TestDesc(t *testing.T) {
 	test.RunCases(t, test.Cases{
 		// Test cases for documented examples
-		"with int Optionals": descTC[int]{
+		"given int Optionals": descTC[int]{
 			opts: []optional.Optional[int]{
 				optional.Of(0),
 				optional.Of(123),
@@ -128,7 +128,7 @@ func TestDesc(t *testing.T) {
 				optional.Empty[int](),
 			},
 		},
-		"with string Optionals": descTC[string]{
+		"given string Optionals": descTC[string]{
 			opts: []optional.Optional[string]{
 				optional.Of(""),
 				optional.Of("abc"),
@@ -174,10 +174,10 @@ func (tc isAscTC[T]) Test(t *testing.T) {
 func TestIsAsc(t *testing.T) {
 	test.RunCases(t, test.Cases{
 		// Test cases for documented examples
-		"with no int Optionals": isAscTC[int]{
+		"given no int Optionals": isAscTC[int]{
 			expect: true,
 		},
-		"with int Optionals not sorted in ascending order": isAscTC[int]{
+		"given int Optionals not sorted in ascending order": isAscTC[int]{
 			opts: []optional.Optional[int]{
 				optional.Of(0),
 				optional.Of(123),
@@ -185,7 +185,7 @@ func TestIsAsc(t *testing.T) {
 			},
 			expect: false,
 		},
-		"with int Optionals sorted in ascending order": isAscTC[int]{
+		"given int Optionals sorted in ascending order": isAscTC[int]{
 			opts: []optional.Optional[int]{
 				optional.Empty[int](),
 				optional.Of(0),
@@ -193,10 +193,10 @@ func TestIsAsc(t *testing.T) {
 			},
 			expect: true,
 		},
-		"with no string Optionals": isAscTC[string]{
+		"given no string Optionals": isAscTC[string]{
 			expect: true,
 		},
-		"with string Optionals not sorted in ascending order": isAscTC[string]{
+		"given string Optionals not sorted in ascending order": isAscTC[string]{
 			opts: []optional.Optional[string]{
 				optional.Of(""),
 				optional.Of("abc"),
@@ -204,7 +204,7 @@ func TestIsAsc(t *testing.T) {
 			},
 			expect: false,
 		},
-		"with string Optionals sorted in ascending order": isAscTC[string]{
+		"given string Optionals sorted in ascending order": isAscTC[string]{
 			opts: []optional.Optional[string]{
 				optional.Empty[string](),
 				optional.Of(""),
@@ -246,10 +246,10 @@ func (tc isDescTC[T]) Test(t *testing.T) {
 func TestIsDesc(t *testing.T) {
 	test.RunCases(t, test.Cases{
 		// Test cases for documented examples
-		"with no int Optionals": isDescTC[int]{
+		"given no int Optionals": isDescTC[int]{
 			expect: true,
 		},
-		"with int Optionals not sorted in descending order": isDescTC[int]{
+		"given int Optionals not sorted in descending order": isDescTC[int]{
 			opts: []optional.Optional[int]{
 				optional.Of(0),
 				optional.Of(123),
@@ -257,7 +257,7 @@ func TestIsDesc(t *testing.T) {
 			},
 			expect: false,
 		},
-		"with int Optionals sorted in descending order": isDescTC[int]{
+		"given int Optionals sorted in descending order": isDescTC[int]{
 			opts: []optional.Optional[int]{
 				optional.Of(123),
 				optional.Of(0),
@@ -265,10 +265,10 @@ func TestIsDesc(t *testing.T) {
 			},
 			expect: true,
 		},
-		"with no string Optionals": isDescTC[string]{
+		"given no string Optionals": isDescTC[string]{
 			expect: true,
 		},
-		"with string Optionals not sorted in descending order": isDescTC[string]{
+		"given string Optionals not sorted in descending order": isDescTC[string]{
 			opts: []optional.Optional[string]{
 				optional.Of(""),
 				optional.Of("abc"),
@@ -276,7 +276,7 @@ func TestIsDesc(t *testing.T) {
 			},
 			expect: false,
 		},
-		"with string Optionals sorted in descending order": isDescTC[string]{
+		"given string Optionals sorted in descending order": isDescTC[string]{
 			opts: []optional.Optional[string]{
 				optional.Of("abc"),
 				optional.Of(""),

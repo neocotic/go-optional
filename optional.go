@@ -82,6 +82,20 @@ const emptyString = "<empty>"
 // errNotPresent is used when panicking.
 var errNotPresent = fmt.Errorf("go-optional: value not present")
 
+// Equal returns whether the Optional is equal to the other provided.
+//
+// Two Optional are only considered equal if they are either both empty or both contain the same value. The equality of
+// the value itself is checked using reflect.DeepEqual.
+func (o Optional[T]) Equal(other Optional[T]) bool {
+	if o.present != other.present {
+		return false
+	}
+	if !o.present {
+		return true
+	}
+	return reflect.DeepEqual(o.value, other.value)
+}
+
 // Filter returns the Optional if it has a value present that the given function returns true for, otherwise an empty
 // Optional.
 //
@@ -341,6 +355,22 @@ func Compare[T cmp.Ordered](x, y Optional[T]) int {
 // Empty returns an Optional with no value. It's the equivalent of using a zero value Optional.
 func Empty[T any]() Optional[T] {
 	return Optional[T]{}
+}
+
+// Equal returns whether a given Optional is equal to another.
+//
+// Two Optional are only considered equal if they are either both empty or both contain the same value. The equality of
+// the value itself is checked using reflect.DeepEqual.
+//
+// The difference between Equal and Optional.Equal is that the former allows mixed types to be checked.
+func Equal[T1 any, T2 any](o1 Optional[T1], o2 Optional[T2]) bool {
+	if o1.present != o2.present {
+		return false
+	}
+	if !o1.present {
+		return true
+	}
+	return reflect.DeepEqual(o1.value, o2.value)
 }
 
 // Find returns the first given Optional that has a value present, otherwise an empty Optional.
