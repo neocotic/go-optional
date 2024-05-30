@@ -39,6 +39,121 @@ import (
 	"unicode"
 )
 
+func BenchmarkOptional_Equal(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		Of(123).Equal(Of(123))
+	}
+}
+
+type optionalEqualTC[T any] struct {
+	opt    Optional[T]
+	other  Optional[T]
+	expect bool
+	test.Control
+}
+
+func (tc optionalEqualTC[T]) Test(t *testing.T) {
+	actual := tc.opt.Equal(tc.other)
+	assert.Equal(t, tc.expect, actual, "unexpected equality")
+}
+
+func TestOptional_Equal(t *testing.T) {
+	test.RunCases(t, test.Cases{
+		// Test cases for documented examples
+		"on empty int Optional given empty int Optional": optionalEqualTC[int]{
+			opt:    Empty[int](),
+			other:  Empty[int](),
+			expect: true,
+		},
+		"on empty int Optional given non-empty int Optional with zero value": optionalEqualTC[int]{
+			opt:    Empty[int](),
+			other:  Of(0),
+			expect: false,
+		},
+		"on non-empty int Optional with zero value given empty int Optional": optionalEqualTC[int]{
+			opt:    Of(0),
+			other:  Empty[int](),
+			expect: false,
+		},
+		"on non-empty int Optional with zero value given non-empty int Optional with zero value": optionalEqualTC[int]{
+			opt:    Of(0),
+			other:  Of(0),
+			expect: true,
+		},
+		"on non-empty int Optional with zero value given non-empty int Optional with non-zero value": optionalEqualTC[int]{
+			opt:    Of(0),
+			other:  Of(123),
+			expect: false,
+		},
+		"on non-empty int Optional with non-zero value given non-empty int Optional with zero value": optionalEqualTC[int]{
+			opt:    Of(123),
+			other:  Of(0),
+			expect: false,
+		},
+		"on non-empty int Optional with non-zero value given non-empty int Optional with equal non-zero value": optionalEqualTC[int]{
+			opt:    Of(123),
+			other:  Of(123),
+			expect: true,
+		},
+		"on non-empty int Optional with non-zero value given non-empty int Optional with similar but not equal non-zero value": optionalEqualTC[int]{
+			opt:    Of(123),
+			other:  Of(-123),
+			expect: false,
+		},
+		"on non-empty int Optional with non-zero value given empty int Optional": optionalEqualTC[int]{
+			opt:    Of(123),
+			other:  Empty[int](),
+			expect: false,
+		},
+		"on empty string Optional given empty string Optional": optionalEqualTC[string]{
+			opt:    Empty[string](),
+			other:  Empty[string](),
+			expect: true,
+		},
+		"on empty string Optional given non-empty string Optional with zero value": optionalEqualTC[string]{
+			opt:    Empty[string](),
+			other:  Of(""),
+			expect: false,
+		},
+		"on non-empty string Optional with zero value given empty string Optional": optionalEqualTC[string]{
+			opt:    Of(""),
+			other:  Empty[string](),
+			expect: false,
+		},
+		"on non-empty string Optional with zero value given non-empty string Optional with zero value": optionalEqualTC[string]{
+			opt:    Of(""),
+			other:  Of(""),
+			expect: true,
+		},
+		"on non-empty string Optional with zero value given non-empty string Optional with non-zero value": optionalEqualTC[string]{
+			opt:    Of(""),
+			other:  Of("abc"),
+			expect: false,
+		},
+		"on non-empty string Optional with non-zero value given non-empty string Optional with zero value": optionalEqualTC[string]{
+			opt:    Of("abc"),
+			other:  Of(""),
+			expect: false,
+		},
+		"on non-empty string Optional with non-zero value given non-empty string Optional with equal non-zero value": optionalEqualTC[string]{
+			opt:    Of("abc"),
+			other:  Of("abc"),
+			expect: true,
+		},
+		"on non-empty string Optional with non-zero value given non-empty string Optional with similar but not equal non-zero value": optionalEqualTC[string]{
+			opt:    Of("abc"),
+			other:  Of("ABC"),
+			expect: false,
+		},
+		"on non-empty string Optional with non-zero value given empty string Optional": optionalEqualTC[string]{
+			opt:    Of("abc"),
+			other:  Empty[string](),
+			expect: false,
+		},
+		// Other test cases...
+	})
+}
+
 func BenchmarkOptional_Filter(b *testing.B) {
 	isPos := func(value int) bool {
 		return value >= 0
@@ -842,7 +957,7 @@ func TestOptional_OrElseTryGet(t *testing.T) {
 			other:       defaultStringFunc(nil),
 			expectValue: "abc",
 		},
-		"on empty string Optional triggering erroneous default call": optionalOrElseTryGetTC[string]{
+		"on empty string Optional given function triggering erroneous default call": optionalOrElseTryGetTC[string]{
 			opt:         Empty[string](),
 			other:       defaultStringFunc(errors.New("default string already used")),
 			expectError: true,
@@ -975,105 +1090,105 @@ func TestOptional_Scan(t *testing.T) {
 		// Test cases for bool source
 		// Supported destination types (incl. pointers and convertible types):
 		// bool, string, []byte, sql.RawBytes, any
-		"on empty bool Optional with zero bool source": optionalScanTC[bool, bool]{
+		"on empty bool Optional given zero bool source": optionalScanTC[bool, bool]{
 			src:           false,
 			expectPresent: true,
 			expectValue:   false,
 		},
-		"on empty bool Optional with non-zero bool source": optionalScanTC[bool, bool]{
+		"on empty bool Optional given non-zero bool source": optionalScanTC[bool, bool]{
 			src:           true,
 			expectPresent: true,
 			expectValue:   true,
 		},
-		"on empty *bool Optional with zero bool source": optionalScanTC[bool, *bool]{
+		"on empty *bool Optional given zero bool source": optionalScanTC[bool, *bool]{
 			src:           false,
 			expectPresent: true,
 			expectValue:   ptrs.False(),
 		},
-		"on empty *bool Optional with non-zero bool source": optionalScanTC[bool, *bool]{
+		"on empty *bool Optional given non-zero bool source": optionalScanTC[bool, *bool]{
 			src:           true,
 			expectPresent: true,
 			expectValue:   ptrs.True(),
 		},
-		"on empty Bool Optional with non-zero bool source": optionalScanTC[bool, Bool]{
+		"on empty Bool Optional given non-zero bool source": optionalScanTC[bool, Bool]{
 			src:           true,
 			expectPresent: true,
 			expectValue:   true,
 		},
-		"on empty *Bool Optional with non-zero bool source": optionalScanTC[bool, *Bool]{
+		"on empty *Bool Optional given non-zero bool source": optionalScanTC[bool, *Bool]{
 			src:           true,
 			expectPresent: true,
 			expectValue:   ptrs.Value[Bool](true),
 		},
-		"on empty string Optional with zero bool source": optionalScanTC[bool, string]{
+		"on empty string Optional given zero bool source": optionalScanTC[bool, string]{
 			src:           false,
 			expectPresent: true,
 			expectValue:   "false",
 		},
-		"on empty string Optional with non-zero bool source": optionalScanTC[bool, string]{
+		"on empty string Optional given non-zero bool source": optionalScanTC[bool, string]{
 			src:           true,
 			expectPresent: true,
 			expectValue:   "true",
 		},
-		"on empty *string Optional with zero bool source": optionalScanTC[bool, *string]{
+		"on empty *string Optional given zero bool source": optionalScanTC[bool, *string]{
 			src:           false,
 			expectPresent: true,
 			expectValue:   ptrs.String("false"),
 		},
-		"on empty *string Optional with non-zero bool source": optionalScanTC[bool, *string]{
+		"on empty *string Optional given non-zero bool source": optionalScanTC[bool, *string]{
 			src:           true,
 			expectPresent: true,
 			expectValue:   ptrs.String("true"),
 		},
-		"on empty String Optional with non-zero bool source": optionalScanTC[bool, String]{
+		"on empty String Optional given non-zero bool source": optionalScanTC[bool, String]{
 			src:           true,
 			expectPresent: true,
 			expectValue:   "true",
 		},
-		"on empty *String Optional with non-zero bool source": optionalScanTC[bool, *String]{
+		"on empty *String Optional given non-zero bool source": optionalScanTC[bool, *String]{
 			src:           true,
 			expectPresent: true,
 			expectValue:   ptrs.Value[String]("true"),
 		},
-		"on empty []byte Optional with zero bool source": optionalScanTC[bool, []byte]{
+		"on empty []byte Optional given zero bool source": optionalScanTC[bool, []byte]{
 			src:           false,
 			expectPresent: true,
 			expectValue:   []byte("false"),
 		},
-		"on empty []byte Optional with non-zero bool source": optionalScanTC[bool, []byte]{
+		"on empty []byte Optional given non-zero bool source": optionalScanTC[bool, []byte]{
 			src:           true,
 			expectPresent: true,
 			expectValue:   []byte("true"),
 		},
-		"on empty Bytes Optional with non-zero bool source": optionalScanTC[bool, Bytes]{
+		"on empty Bytes Optional given non-zero bool source": optionalScanTC[bool, Bytes]{
 			src:           true,
 			expectPresent: true,
 			expectValue:   Bytes("true"),
 		},
-		"on empty sql.RawBytes Optional with non-zero bool source": optionalScanTC[bool, sql.RawBytes]{
+		"on empty sql.RawBytes Optional given non-zero bool source": optionalScanTC[bool, sql.RawBytes]{
 			src:           true,
 			expectPresent: true,
 			expectValue:   sql.RawBytes("true"),
 		},
-		"on empty any Optional with zero bool source": optionalScanTC[bool, any]{
+		"on empty any Optional given zero bool source": optionalScanTC[bool, any]{
 			src:           false,
 			expectPresent: true,
 			expectValue:   false,
 		},
-		"on empty any Optional with non-zero bool source": optionalScanTC[bool, any]{
+		"on empty any Optional given non-zero bool source": optionalScanTC[bool, any]{
 			src:           true,
 			expectPresent: true,
 			expectValue:   true,
 		},
-		"on empty Optional of unsupported slice with non-zero bool source": optionalScanTC[bool, []uintptr]{
+		"on empty Optional of unsupported slice given non-zero bool source": optionalScanTC[bool, []uintptr]{
 			src:         true,
 			expectError: true,
 		},
-		"on empty Optional of unsupported type with non-zero bool source": optionalScanTC[bool, uintptr]{
+		"on empty Optional of unsupported type given non-zero bool source": optionalScanTC[bool, uintptr]{
 			src:         true,
 			expectError: true,
 		},
-		"on empty sql.NullBool Optional with non-zero bool source": optionalScanTC[bool, sql.NullBool]{
+		"on empty sql.NullBool Optional given non-zero bool source": optionalScanTC[bool, sql.NullBool]{
 			src:           true,
 			expectPresent: true,
 			expectValue:   sql.NullBool{Bool: true, Valid: true},
@@ -1082,712 +1197,712 @@ func TestOptional_Scan(t *testing.T) {
 		// Supported destination types (incl. pointers and convertible types):
 		// float32, float64, int, int8, int16, int32, int64, string, uint, uint8, uint16, uint32, uint64, []byte,
 		// sql.RawBytes, any
-		"on empty float32 Optional with zero float64 source": optionalScanTC[float64, float32]{
+		"on empty float32 Optional given zero float64 source": optionalScanTC[float64, float32]{
 			src:           0,
 			expectPresent: true,
 			expectValue:   0,
 		},
-		"on empty float32 Optional with negative non-zero float64 source": optionalScanTC[float64, float32]{
+		"on empty float32 Optional given negative non-zero float64 source": optionalScanTC[float64, float32]{
 			src:           -123.456,
 			expectPresent: true,
 			expectValue:   -123.456,
 		},
-		"on empty float32 Optional with negative non-zero float64 source that exceeds min float32": optionalScanTC[float64, float32]{
+		"on empty float32 Optional given negative non-zero float64 source that exceeds min float32": optionalScanTC[float64, float32]{
 			src:         -math.MaxFloat64,
 			expectError: true,
 		},
-		"on empty float32 Optional with positive non-zero float64 source": optionalScanTC[float64, float32]{
+		"on empty float32 Optional given positive non-zero float64 source": optionalScanTC[float64, float32]{
 			src:           123.456,
 			expectPresent: true,
 			expectValue:   123.456,
 		},
-		"on empty float32 Optional with positive non-zero float64 source that exceeds max float32": optionalScanTC[float64, float32]{
+		"on empty float32 Optional given positive non-zero float64 source that exceeds max float32": optionalScanTC[float64, float32]{
 			src:         math.MaxFloat64,
 			expectError: true,
 		},
-		"on empty *float32 Optional with zero float64 source": optionalScanTC[float64, *float32]{
+		"on empty *float32 Optional given zero float64 source": optionalScanTC[float64, *float32]{
 			src:           0,
 			expectPresent: true,
 			expectValue:   ptrs.ZeroFloat32(),
 		},
-		"on empty *float32 Optional with non-zero float64 source": optionalScanTC[float64, *float32]{
+		"on empty *float32 Optional given non-zero float64 source": optionalScanTC[float64, *float32]{
 			src:           123.456,
 			expectPresent: true,
 			expectValue:   ptrs.Float32(123.456),
 		},
-		"on empty Float32 Optional with non-zero float64 source": optionalScanTC[float64, Float32]{
+		"on empty Float32 Optional given non-zero float64 source": optionalScanTC[float64, Float32]{
 			src:           123.456,
 			expectPresent: true,
 			expectValue:   123.456,
 		},
-		"on empty Float32 Optional with non-zero float64 source that exceeds max float32": optionalScanTC[float64, Float32]{
+		"on empty Float32 Optional given non-zero float64 source that exceeds max float32": optionalScanTC[float64, Float32]{
 			src:         math.MaxFloat64,
 			expectError: true,
 		},
-		"on empty *Float32 Optional with non-zero float64 source": optionalScanTC[float64, *Float32]{
+		"on empty *Float32 Optional given non-zero float64 source": optionalScanTC[float64, *Float32]{
 			src:           123.456,
 			expectPresent: true,
 			expectValue:   ptrs.Value[Float32](123.456),
 		},
-		"on empty float64 Optional with zero float64 source": optionalScanTC[float64, float64]{
+		"on empty float64 Optional given zero float64 source": optionalScanTC[float64, float64]{
 			src:           0,
 			expectPresent: true,
 			expectValue:   0,
 		},
-		"on empty float64 Optional with negative non-zero float64 source": optionalScanTC[float64, float64]{
+		"on empty float64 Optional given negative non-zero float64 source": optionalScanTC[float64, float64]{
 			src:           -123.456,
 			expectPresent: true,
 			expectValue:   -123.456,
 		},
-		"on empty float64 Optional with positive non-zero float64 source": optionalScanTC[float64, float64]{
+		"on empty float64 Optional given positive non-zero float64 source": optionalScanTC[float64, float64]{
 			src:           123.456,
 			expectPresent: true,
 			expectValue:   123.456,
 		},
-		"on empty *float64 Optional with zero float64 source": optionalScanTC[float64, *float64]{
+		"on empty *float64 Optional given zero float64 source": optionalScanTC[float64, *float64]{
 			src:           0,
 			expectPresent: true,
 			expectValue:   ptrs.ZeroFloat64(),
 		},
-		"on empty *float64 Optional with non-zero float64 source": optionalScanTC[float64, *float64]{
+		"on empty *float64 Optional given non-zero float64 source": optionalScanTC[float64, *float64]{
 			src:           123.456,
 			expectPresent: true,
 			expectValue:   ptrs.Float64(123.456),
 		},
-		"on empty Float64 Optional with non-zero float64 source": optionalScanTC[float64, Float64]{
+		"on empty Float64 Optional given non-zero float64 source": optionalScanTC[float64, Float64]{
 			src:           123.456,
 			expectPresent: true,
 			expectValue:   123.456,
 		},
-		"on empty *Float64 Optional with non-zero float64 source": optionalScanTC[float64, *Float64]{
+		"on empty *Float64 Optional given non-zero float64 source": optionalScanTC[float64, *Float64]{
 			src:           123.456,
 			expectPresent: true,
 			expectValue:   ptrs.Value[Float64](123.456),
 		},
-		"on empty int Optional with zero float64 source": optionalScanTC[float64, int]{
+		"on empty int Optional given zero float64 source": optionalScanTC[float64, int]{
 			src:           0,
 			expectPresent: true,
 			expectValue:   0,
 		},
-		"on empty int Optional with negative non-zero float64 source": optionalScanTC[float64, int]{
+		"on empty int Optional given negative non-zero float64 source": optionalScanTC[float64, int]{
 			src:           -123,
 			expectPresent: true,
 			expectValue:   -123,
 		},
-		"on empty int Optional with negative non-zero float64 source that contains floating points": optionalScanTC[float64, int]{
+		"on empty int Optional given negative non-zero float64 source that contains floating points": optionalScanTC[float64, int]{
 			src:         -123.456,
 			expectError: true,
 		},
-		"on empty int Optional with negative non-zero float64 source that exceeds min int": optionalScanTC[float64, int]{
+		"on empty int Optional given negative non-zero float64 source that exceeds min int": optionalScanTC[float64, int]{
 			src:         math.Ceil(-math.MaxFloat64),
 			expectError: true,
 		},
-		"on empty int Optional with positive non-zero float64 source": optionalScanTC[float64, int]{
+		"on empty int Optional given positive non-zero float64 source": optionalScanTC[float64, int]{
 			src:           123,
 			expectPresent: true,
 			expectValue:   123,
 		},
-		"on empty int Optional with positive non-zero float64 source that contains floating points": optionalScanTC[float64, int]{
+		"on empty int Optional given positive non-zero float64 source that contains floating points": optionalScanTC[float64, int]{
 			src:         123.456,
 			expectError: true,
 		},
-		"on empty int Optional with positive non-zero float64 source that exceeds max int": optionalScanTC[float64, int]{
+		"on empty int Optional given positive non-zero float64 source that exceeds max int": optionalScanTC[float64, int]{
 			src:         math.Floor(math.MaxFloat64),
 			expectError: true,
 		},
-		"on empty *int Optional with zero float64 source": optionalScanTC[float64, *int]{
+		"on empty *int Optional given zero float64 source": optionalScanTC[float64, *int]{
 			src:           0,
 			expectPresent: true,
 			expectValue:   ptrs.ZeroInt(),
 		},
-		"on empty *int Optional with non-zero float64 source": optionalScanTC[float64, *int]{
+		"on empty *int Optional given non-zero float64 source": optionalScanTC[float64, *int]{
 			src:           123,
 			expectPresent: true,
 			expectValue:   ptrs.Int(123),
 		},
-		"on empty Int Optional with non-zero float64 source": optionalScanTC[float64, Int]{
+		"on empty Int Optional given non-zero float64 source": optionalScanTC[float64, Int]{
 			src:           123,
 			expectPresent: true,
 			expectValue:   123,
 		},
-		"on empty Int Optional with non-zero float64 source that contains floating points": optionalScanTC[float64, Int]{
+		"on empty Int Optional given non-zero float64 source that contains floating points": optionalScanTC[float64, Int]{
 			src:         123.456,
 			expectError: true,
 		},
-		"on empty Int Optional with non-zero float64 source that exceeds max int": optionalScanTC[float64, Int]{
+		"on empty Int Optional given non-zero float64 source that exceeds max int": optionalScanTC[float64, Int]{
 			src:         math.Floor(math.MaxFloat64),
 			expectError: true,
 		},
-		"on empty *Int Optional with non-zero float64 source": optionalScanTC[float64, *Int]{
+		"on empty *Int Optional given non-zero float64 source": optionalScanTC[float64, *Int]{
 			src:           123,
 			expectPresent: true,
 			expectValue:   ptrs.Value[Int](123),
 		},
-		"on empty int8 Optional with zero float64 source": optionalScanTC[float64, int8]{
+		"on empty int8 Optional given zero float64 source": optionalScanTC[float64, int8]{
 			src:           0,
 			expectPresent: true,
 			expectValue:   0,
 		},
-		"on empty int8 Optional with negative non-zero float64 source": optionalScanTC[float64, int8]{
+		"on empty int8 Optional given negative non-zero float64 source": optionalScanTC[float64, int8]{
 			src:           -123,
 			expectPresent: true,
 			expectValue:   -123,
 		},
-		"on empty int8 Optional with negative non-zero float64 source that contains floating points": optionalScanTC[float64, int8]{
+		"on empty int8 Optional given negative non-zero float64 source that contains floating points": optionalScanTC[float64, int8]{
 			src:         -123.456,
 			expectError: true,
 		},
-		"on empty int8 Optional with negative non-zero float64 source that exceeds min int8": optionalScanTC[float64, int8]{
+		"on empty int8 Optional given negative non-zero float64 source that exceeds min int8": optionalScanTC[float64, int8]{
 			src:         math.Ceil(-math.MaxFloat64),
 			expectError: true,
 		},
-		"on empty int8 Optional with positive non-zero float64 source": optionalScanTC[float64, int8]{
+		"on empty int8 Optional given positive non-zero float64 source": optionalScanTC[float64, int8]{
 			src:           123,
 			expectPresent: true,
 			expectValue:   123,
 		},
-		"on empty int8 Optional with positive non-zero float64 source that contains floating points": optionalScanTC[float64, int8]{
+		"on empty int8 Optional given positive non-zero float64 source that contains floating points": optionalScanTC[float64, int8]{
 			src:         123.456,
 			expectError: true,
 		},
-		"on empty int8 Optional with positive non-zero float64 source that exceeds max int8": optionalScanTC[float64, int8]{
+		"on empty int8 Optional given positive non-zero float64 source that exceeds max int8": optionalScanTC[float64, int8]{
 			src:         math.Floor(math.MaxFloat64),
 			expectError: true,
 		},
-		"on empty *int8 Optional with zero float64 source": optionalScanTC[float64, *int8]{
+		"on empty *int8 Optional given zero float64 source": optionalScanTC[float64, *int8]{
 			src:           0,
 			expectPresent: true,
 			expectValue:   ptrs.ZeroInt8(),
 		},
-		"on empty *int8 Optional with non-zero float64 source": optionalScanTC[float64, *int8]{
+		"on empty *int8 Optional given non-zero float64 source": optionalScanTC[float64, *int8]{
 			src:           123,
 			expectPresent: true,
 			expectValue:   ptrs.Int8(123),
 		},
-		"on empty Int8 Optional with non-zero float64 source": optionalScanTC[float64, Int8]{
+		"on empty Int8 Optional given non-zero float64 source": optionalScanTC[float64, Int8]{
 			src:           123,
 			expectPresent: true,
 			expectValue:   123,
 		},
-		"on empty Int8 Optional with non-zero float64 source that contains floating points": optionalScanTC[float64, Int8]{
+		"on empty Int8 Optional given non-zero float64 source that contains floating points": optionalScanTC[float64, Int8]{
 			src:         123.456,
 			expectError: true,
 		},
-		"on empty Int8 Optional with non-zero float64 source that exceeds max int8": optionalScanTC[float64, Int8]{
+		"on empty Int8 Optional given non-zero float64 source that exceeds max int8": optionalScanTC[float64, Int8]{
 			src:         math.Floor(math.MaxFloat64),
 			expectError: true,
 		},
-		"on empty *Int8 Optional with non-zero float64 source": optionalScanTC[float64, *Int8]{
+		"on empty *Int8 Optional given non-zero float64 source": optionalScanTC[float64, *Int8]{
 			src:           123,
 			expectPresent: true,
 			expectValue:   ptrs.Value[Int8](123),
 		},
-		"on empty int16 Optional with zero float64 source": optionalScanTC[float64, int16]{
+		"on empty int16 Optional given zero float64 source": optionalScanTC[float64, int16]{
 			src:           0,
 			expectPresent: true,
 			expectValue:   0,
 		},
-		"on empty int16 Optional with negative non-zero float64 source": optionalScanTC[float64, int16]{
+		"on empty int16 Optional given negative non-zero float64 source": optionalScanTC[float64, int16]{
 			src:           -123,
 			expectPresent: true,
 			expectValue:   -123,
 		},
-		"on empty int16 Optional with negative non-zero float64 source that contains floating points": optionalScanTC[float64, int16]{
+		"on empty int16 Optional given negative non-zero float64 source that contains floating points": optionalScanTC[float64, int16]{
 			src:         -123.456,
 			expectError: true,
 		},
-		"on empty int16 Optional with negative non-zero float64 source that exceeds min int16": optionalScanTC[float64, int16]{
+		"on empty int16 Optional given negative non-zero float64 source that exceeds min int16": optionalScanTC[float64, int16]{
 			src:         math.Ceil(-math.MaxFloat64),
 			expectError: true,
 		},
-		"on empty int16 Optional with positive non-zero float64 source": optionalScanTC[float64, int16]{
+		"on empty int16 Optional given positive non-zero float64 source": optionalScanTC[float64, int16]{
 			src:           123,
 			expectPresent: true,
 			expectValue:   123,
 		},
-		"on empty int16 Optional with positive non-zero float64 source that contains floating points": optionalScanTC[float64, int16]{
+		"on empty int16 Optional given positive non-zero float64 source that contains floating points": optionalScanTC[float64, int16]{
 			src:         123.456,
 			expectError: true,
 		},
-		"on empty int16 Optional with positive non-zero float64 source that exceeds max int16": optionalScanTC[float64, int16]{
+		"on empty int16 Optional given positive non-zero float64 source that exceeds max int16": optionalScanTC[float64, int16]{
 			src:         math.Floor(math.MaxFloat64),
 			expectError: true,
 		},
-		"on empty *int16 Optional with zero float64 source": optionalScanTC[float64, *int16]{
+		"on empty *int16 Optional given zero float64 source": optionalScanTC[float64, *int16]{
 			src:           0,
 			expectPresent: true,
 			expectValue:   ptrs.ZeroInt16(),
 		},
-		"on empty *int16 Optional with non-zero float64 source": optionalScanTC[float64, *int16]{
+		"on empty *int16 Optional given non-zero float64 source": optionalScanTC[float64, *int16]{
 			src:           123,
 			expectPresent: true,
 			expectValue:   ptrs.Int16(123),
 		},
-		"on empty Int16 Optional with non-zero float64 source": optionalScanTC[float64, Int16]{
+		"on empty Int16 Optional given non-zero float64 source": optionalScanTC[float64, Int16]{
 			src:           123,
 			expectPresent: true,
 			expectValue:   123,
 		},
-		"on empty Int16 Optional with non-zero float64 source that contains floating points": optionalScanTC[float64, Int16]{
+		"on empty Int16 Optional given non-zero float64 source that contains floating points": optionalScanTC[float64, Int16]{
 			src:         123.456,
 			expectError: true,
 		},
-		"on empty Int16 Optional with non-zero float64 source that exceeds max int16": optionalScanTC[float64, Int16]{
+		"on empty Int16 Optional given non-zero float64 source that exceeds max int16": optionalScanTC[float64, Int16]{
 			src:         math.Floor(math.MaxFloat64),
 			expectError: true,
 		},
-		"on empty *Int16 Optional with non-zero float64 source": optionalScanTC[float64, *Int16]{
+		"on empty *Int16 Optional given non-zero float64 source": optionalScanTC[float64, *Int16]{
 			src:           123,
 			expectPresent: true,
 			expectValue:   ptrs.Value[Int16](123),
 		},
-		"on empty int32 Optional with zero float64 source": optionalScanTC[float64, int32]{
+		"on empty int32 Optional given zero float64 source": optionalScanTC[float64, int32]{
 			src:           0,
 			expectPresent: true,
 			expectValue:   0,
 		},
-		"on empty int32 Optional with negative non-zero float64 source": optionalScanTC[float64, int32]{
+		"on empty int32 Optional given negative non-zero float64 source": optionalScanTC[float64, int32]{
 			src:           -123,
 			expectPresent: true,
 			expectValue:   -123,
 		},
-		"on empty int32 Optional with negative non-zero float64 source that contains floating points": optionalScanTC[float64, int32]{
+		"on empty int32 Optional given negative non-zero float64 source that contains floating points": optionalScanTC[float64, int32]{
 			src:         -123.456,
 			expectError: true,
 		},
-		"on empty int32 Optional with negative non-zero float64 source that exceeds min int32": optionalScanTC[float64, int32]{
+		"on empty int32 Optional given negative non-zero float64 source that exceeds min int32": optionalScanTC[float64, int32]{
 			src:         math.Ceil(-math.MaxFloat64),
 			expectError: true,
 		},
-		"on empty int32 Optional with positive non-zero float64 source": optionalScanTC[float64, int32]{
+		"on empty int32 Optional given positive non-zero float64 source": optionalScanTC[float64, int32]{
 			src:           123,
 			expectPresent: true,
 			expectValue:   123,
 		},
-		"on empty int32 Optional with positive non-zero float64 source that contains floating points": optionalScanTC[float64, int32]{
+		"on empty int32 Optional given positive non-zero float64 source that contains floating points": optionalScanTC[float64, int32]{
 			src:         123.456,
 			expectError: true,
 		},
-		"on empty int32 Optional with positive non-zero float64 source that exceeds max int32": optionalScanTC[float64, int32]{
+		"on empty int32 Optional given positive non-zero float64 source that exceeds max int32": optionalScanTC[float64, int32]{
 			src:         math.Floor(math.MaxFloat64),
 			expectError: true,
 		},
-		"on empty *int32 Optional with zero float64 source": optionalScanTC[float64, *int32]{
+		"on empty *int32 Optional given zero float64 source": optionalScanTC[float64, *int32]{
 			src:           0,
 			expectPresent: true,
 			expectValue:   ptrs.ZeroInt32(),
 		},
-		"on empty *int32 Optional with non-zero float64 source": optionalScanTC[float64, *int32]{
+		"on empty *int32 Optional given non-zero float64 source": optionalScanTC[float64, *int32]{
 			src:           123,
 			expectPresent: true,
 			expectValue:   ptrs.Int32(123),
 		},
-		"on empty Int32 Optional with non-zero float64 source": optionalScanTC[float64, Int32]{
+		"on empty Int32 Optional given non-zero float64 source": optionalScanTC[float64, Int32]{
 			src:           123,
 			expectPresent: true,
 			expectValue:   123,
 		},
-		"on empty Int32 Optional with non-zero float64 source that contains floating points": optionalScanTC[float64, Int32]{
+		"on empty Int32 Optional given non-zero float64 source that contains floating points": optionalScanTC[float64, Int32]{
 			src:         123.456,
 			expectError: true,
 		},
-		"on empty Int32 Optional with non-zero float64 source that exceeds max int32": optionalScanTC[float64, Int32]{
+		"on empty Int32 Optional given non-zero float64 source that exceeds max int32": optionalScanTC[float64, Int32]{
 			src:         math.Floor(math.MaxFloat64),
 			expectError: true,
 		},
-		"on empty *Int32 Optional with non-zero float64 source": optionalScanTC[float64, *Int32]{
+		"on empty *Int32 Optional given non-zero float64 source": optionalScanTC[float64, *Int32]{
 			src:           123,
 			expectPresent: true,
 			expectValue:   ptrs.Value[Int32](123),
 		},
-		"on empty int64 Optional with zero float64 source": optionalScanTC[float64, int64]{
+		"on empty int64 Optional given zero float64 source": optionalScanTC[float64, int64]{
 			src:           0,
 			expectPresent: true,
 			expectValue:   0,
 		},
-		"on empty int64 Optional with negative non-zero float64 source": optionalScanTC[float64, int64]{
+		"on empty int64 Optional given negative non-zero float64 source": optionalScanTC[float64, int64]{
 			src:           -123,
 			expectPresent: true,
 			expectValue:   -123,
 		},
-		"on empty int64 Optional with negative non-zero float64 source that contains floating points": optionalScanTC[float64, int64]{
+		"on empty int64 Optional given negative non-zero float64 source that contains floating points": optionalScanTC[float64, int64]{
 			src:         -123.456,
 			expectError: true,
 		},
-		"on empty int64 Optional with negative non-zero float64 source that exceeds min int64": optionalScanTC[float64, int64]{
+		"on empty int64 Optional given negative non-zero float64 source that exceeds min int64": optionalScanTC[float64, int64]{
 			src:         math.Ceil(-math.MaxFloat64),
 			expectError: true,
 		},
-		"on empty int64 Optional with positive non-zero float64 source": optionalScanTC[float64, int64]{
+		"on empty int64 Optional given positive non-zero float64 source": optionalScanTC[float64, int64]{
 			src:           123,
 			expectPresent: true,
 			expectValue:   123,
 		},
-		"on empty int64 Optional with positive non-zero float64 source that contains floating points": optionalScanTC[float64, int64]{
+		"on empty int64 Optional given positive non-zero float64 source that contains floating points": optionalScanTC[float64, int64]{
 			src:         123.456,
 			expectError: true,
 		},
-		"on empty int64 Optional with positive non-zero float64 source that exceeds max int64": optionalScanTC[float64, int64]{
+		"on empty int64 Optional given positive non-zero float64 source that exceeds max int64": optionalScanTC[float64, int64]{
 			src:         math.Floor(math.MaxFloat64),
 			expectError: true,
 		},
-		"on empty *int64 Optional with zero float64 source": optionalScanTC[float64, *int64]{
+		"on empty *int64 Optional given zero float64 source": optionalScanTC[float64, *int64]{
 			src:           0,
 			expectPresent: true,
 			expectValue:   ptrs.ZeroInt64(),
 		},
-		"on empty *int64 Optional with non-zero float64 source": optionalScanTC[float64, *int64]{
+		"on empty *int64 Optional given non-zero float64 source": optionalScanTC[float64, *int64]{
 			src:           123,
 			expectPresent: true,
 			expectValue:   ptrs.Int64(123),
 		},
-		"on empty Int64 Optional with non-zero float64 source": optionalScanTC[float64, Int64]{
+		"on empty Int64 Optional given non-zero float64 source": optionalScanTC[float64, Int64]{
 			src:           123,
 			expectPresent: true,
 			expectValue:   123,
 		},
-		"on empty Int64 Optional with non-zero float64 source that contains floating points": optionalScanTC[float64, Int64]{
+		"on empty Int64 Optional given non-zero float64 source that contains floating points": optionalScanTC[float64, Int64]{
 			src:         123.456,
 			expectError: true,
 		},
-		"on empty Int64 Optional with non-zero float64 source that exceeds max int64": optionalScanTC[float64, Int64]{
+		"on empty Int64 Optional given non-zero float64 source that exceeds max int64": optionalScanTC[float64, Int64]{
 			src:         math.Floor(math.MaxFloat64),
 			expectError: true,
 		},
-		"on empty *Int64 Optional with non-zero float64 source": optionalScanTC[float64, *Int64]{
+		"on empty *Int64 Optional given non-zero float64 source": optionalScanTC[float64, *Int64]{
 			src:           123,
 			expectPresent: true,
 			expectValue:   ptrs.Value[Int64](123),
 		},
-		"on empty string Optional with zero float64 source": optionalScanTC[float64, string]{
+		"on empty string Optional given zero float64 source": optionalScanTC[float64, string]{
 			src:           0,
 			expectPresent: true,
 			expectValue:   "0",
 		},
-		"on empty string Optional with negative non-zero float64 source": optionalScanTC[float64, string]{
+		"on empty string Optional given negative non-zero float64 source": optionalScanTC[float64, string]{
 			src:           -123.456,
 			expectPresent: true,
 			expectValue:   "-123.456",
 		},
-		"on empty string Optional with positive non-zero float64 source": optionalScanTC[float64, string]{
+		"on empty string Optional given positive non-zero float64 source": optionalScanTC[float64, string]{
 			src:           123.456,
 			expectPresent: true,
 			expectValue:   "123.456",
 		},
-		"on empty *string Optional with zero float64 source": optionalScanTC[float64, *string]{
+		"on empty *string Optional given zero float64 source": optionalScanTC[float64, *string]{
 			src:           0,
 			expectPresent: true,
 			expectValue:   ptrs.String("0"),
 		},
-		"on empty *string Optional with non-zero float64 source": optionalScanTC[float64, *string]{
+		"on empty *string Optional given non-zero float64 source": optionalScanTC[float64, *string]{
 			src:           123.456,
 			expectPresent: true,
 			expectValue:   ptrs.String("123.456"),
 		},
-		"on empty String Optional with non-zero float64 source": optionalScanTC[float64, String]{
+		"on empty String Optional given non-zero float64 source": optionalScanTC[float64, String]{
 			src:           123.456,
 			expectPresent: true,
 			expectValue:   "123.456",
 		},
-		"on empty *String Optional with non-zero float64 source": optionalScanTC[float64, *String]{
+		"on empty *String Optional given non-zero float64 source": optionalScanTC[float64, *String]{
 			src:           123.456,
 			expectPresent: true,
 			expectValue:   ptrs.Value[String]("123.456"),
 		},
-		"on empty uint Optional with zero float64 source": optionalScanTC[float64, uint]{
+		"on empty uint Optional given zero float64 source": optionalScanTC[float64, uint]{
 			src:           0,
 			expectPresent: true,
 			expectValue:   0,
 		},
-		"on empty uint Optional with negative non-zero float64 source": optionalScanTC[float64, uint]{
+		"on empty uint Optional given negative non-zero float64 source": optionalScanTC[float64, uint]{
 			src:         -123,
 			expectError: true,
 		},
-		"on empty uint Optional with positive non-zero float64 source": optionalScanTC[float64, uint]{
+		"on empty uint Optional given positive non-zero float64 source": optionalScanTC[float64, uint]{
 			src:           123,
 			expectPresent: true,
 			expectValue:   123,
 		},
-		"on empty uint Optional with positive non-zero float64 source that contains floating points": optionalScanTC[float64, uint]{
+		"on empty uint Optional given positive non-zero float64 source that contains floating points": optionalScanTC[float64, uint]{
 			src:         123.456,
 			expectError: true,
 		},
-		"on empty uint Optional with positive non-zero float64 source that exceeds max uint": optionalScanTC[float64, uint]{
+		"on empty uint Optional given positive non-zero float64 source that exceeds max uint": optionalScanTC[float64, uint]{
 			src:         math.Floor(math.MaxFloat64),
 			expectError: true,
 		},
-		"on empty *uint Optional with zero float64 source": optionalScanTC[float64, *uint]{
+		"on empty *uint Optional given zero float64 source": optionalScanTC[float64, *uint]{
 			src:           0,
 			expectPresent: true,
 			expectValue:   ptrs.ZeroUint(),
 		},
-		"on empty *uint Optional with non-zero float64 source": optionalScanTC[float64, *uint]{
+		"on empty *uint Optional given non-zero float64 source": optionalScanTC[float64, *uint]{
 			src:           123,
 			expectPresent: true,
 			expectValue:   ptrs.Uint(123),
 		},
-		"on empty Uint Optional with non-zero float64 source": optionalScanTC[float64, Uint]{
+		"on empty Uint Optional given non-zero float64 source": optionalScanTC[float64, Uint]{
 			src:           123,
 			expectPresent: true,
 			expectValue:   123,
 		},
-		"on empty Uint Optional with non-zero float64 source that contains floating points": optionalScanTC[float64, Uint]{
+		"on empty Uint Optional given non-zero float64 source that contains floating points": optionalScanTC[float64, Uint]{
 			src:         123.456,
 			expectError: true,
 		},
-		"on empty Uint Optional with non-zero float64 source that exceeds max uint": optionalScanTC[float64, Uint]{
+		"on empty Uint Optional given non-zero float64 source that exceeds max uint": optionalScanTC[float64, Uint]{
 			src:         math.Floor(math.MaxFloat64),
 			expectError: true,
 		},
-		"on empty *Uint Optional with non-zero float64 source": optionalScanTC[float64, *Uint]{
+		"on empty *Uint Optional given non-zero float64 source": optionalScanTC[float64, *Uint]{
 			src:           123,
 			expectPresent: true,
 			expectValue:   ptrs.Value[Uint](123),
 		},
-		"on empty uint8 Optional with zero float64 source": optionalScanTC[float64, uint8]{
+		"on empty uint8 Optional given zero float64 source": optionalScanTC[float64, uint8]{
 			src:           0,
 			expectPresent: true,
 			expectValue:   0,
 		},
-		"on empty uint8 Optional with negative non-zero float64 source": optionalScanTC[float64, uint8]{
+		"on empty uint8 Optional given negative non-zero float64 source": optionalScanTC[float64, uint8]{
 			src:         -123,
 			expectError: true,
 		},
-		"on empty uint8 Optional with positive non-zero float64 source": optionalScanTC[float64, uint8]{
+		"on empty uint8 Optional given positive non-zero float64 source": optionalScanTC[float64, uint8]{
 			src:           123,
 			expectPresent: true,
 			expectValue:   123,
 		},
-		"on empty uint8 Optional with positive non-zero float64 source that contains floating points": optionalScanTC[float64, uint8]{
+		"on empty uint8 Optional given positive non-zero float64 source that contains floating points": optionalScanTC[float64, uint8]{
 			src:         123.456,
 			expectError: true,
 		},
-		"on empty uint8 Optional with positive non-zero float64 source that exceeds max uint8": optionalScanTC[float64, uint8]{
+		"on empty uint8 Optional given positive non-zero float64 source that exceeds max uint8": optionalScanTC[float64, uint8]{
 			src:         math.Floor(math.MaxFloat64),
 			expectError: true,
 		},
-		"on empty *uint8 Optional with zero float64 source": optionalScanTC[float64, *uint8]{
+		"on empty *uint8 Optional given zero float64 source": optionalScanTC[float64, *uint8]{
 			src:           0,
 			expectPresent: true,
 			expectValue:   ptrs.ZeroUint8(),
 		},
-		"on empty *uint8 Optional with non-zero float64 source": optionalScanTC[float64, *uint8]{
+		"on empty *uint8 Optional given non-zero float64 source": optionalScanTC[float64, *uint8]{
 			src:           123,
 			expectPresent: true,
 			expectValue:   ptrs.Uint8(123),
 		},
-		"on empty Uint8 Optional with non-zero float64 source": optionalScanTC[float64, Uint8]{
+		"on empty Uint8 Optional given non-zero float64 source": optionalScanTC[float64, Uint8]{
 			src:           123,
 			expectPresent: true,
 			expectValue:   123,
 		},
-		"on empty Uint8 Optional with non-zero float64 source that contains floating points": optionalScanTC[float64, Uint8]{
+		"on empty Uint8 Optional given non-zero float64 source that contains floating points": optionalScanTC[float64, Uint8]{
 			src:         123.456,
 			expectError: true,
 		},
-		"on empty Uint8 Optional with non-zero float64 source that exceeds max uint8": optionalScanTC[float64, Uint8]{
+		"on empty Uint8 Optional given non-zero float64 source that exceeds max uint8": optionalScanTC[float64, Uint8]{
 			src:         math.Floor(math.MaxFloat64),
 			expectError: true,
 		},
-		"on empty *Uint8 Optional with non-zero float64 source": optionalScanTC[float64, *Uint8]{
+		"on empty *Uint8 Optional given non-zero float64 source": optionalScanTC[float64, *Uint8]{
 			src:           123,
 			expectPresent: true,
 			expectValue:   ptrs.Value[Uint8](123),
 		},
-		"on empty uint16 Optional with zero float64 source": optionalScanTC[float64, uint16]{
+		"on empty uint16 Optional given zero float64 source": optionalScanTC[float64, uint16]{
 			src:           0,
 			expectPresent: true,
 			expectValue:   0,
 		},
-		"on empty uint16 Optional with negative non-zero float64 source": optionalScanTC[float64, uint16]{
+		"on empty uint16 Optional given negative non-zero float64 source": optionalScanTC[float64, uint16]{
 			src:         -123,
 			expectError: true,
 		},
-		"on empty uint16 Optional with positive non-zero float64 source": optionalScanTC[float64, uint16]{
+		"on empty uint16 Optional given positive non-zero float64 source": optionalScanTC[float64, uint16]{
 			src:           123,
 			expectPresent: true,
 			expectValue:   123,
 		},
-		"on empty uint16 Optional with positive non-zero float64 source that contains floating points": optionalScanTC[float64, uint16]{
+		"on empty uint16 Optional given positive non-zero float64 source that contains floating points": optionalScanTC[float64, uint16]{
 			src:         123.456,
 			expectError: true,
 		},
-		"on empty uint16 Optional with positive non-zero float64 source that exceeds max int16": optionalScanTC[float64, uint16]{
+		"on empty uint16 Optional given positive non-zero float64 source that exceeds max int16": optionalScanTC[float64, uint16]{
 			src:         math.Floor(math.MaxFloat64),
 			expectError: true,
 		},
-		"on empty *uint16 Optional with zero float64 source": optionalScanTC[float64, *uint16]{
+		"on empty *uint16 Optional given zero float64 source": optionalScanTC[float64, *uint16]{
 			src:           0,
 			expectPresent: true,
 			expectValue:   ptrs.ZeroUint16(),
 		},
-		"on empty *uint16 Optional with non-zero float64 source": optionalScanTC[float64, *uint16]{
+		"on empty *uint16 Optional given non-zero float64 source": optionalScanTC[float64, *uint16]{
 			src:           123,
 			expectPresent: true,
 			expectValue:   ptrs.Uint16(123),
 		},
-		"on empty Uint16 Optional with non-zero float64 source": optionalScanTC[float64, Uint16]{
+		"on empty Uint16 Optional given non-zero float64 source": optionalScanTC[float64, Uint16]{
 			src:           123,
 			expectPresent: true,
 			expectValue:   123,
 		},
-		"on empty Uint16 Optional with non-zero float64 source that contains floating points": optionalScanTC[float64, Uint16]{
+		"on empty Uint16 Optional given non-zero float64 source that contains floating points": optionalScanTC[float64, Uint16]{
 			src:         123.456,
 			expectError: true,
 		},
-		"on empty Uint16 Optional with non-zero float64 source that exceeds max uint16": optionalScanTC[float64, Uint16]{
+		"on empty Uint16 Optional given non-zero float64 source that exceeds max uint16": optionalScanTC[float64, Uint16]{
 			src:         math.Floor(math.MaxFloat64),
 			expectError: true,
 		},
-		"on empty *Uint16 Optional with non-zero float64 source": optionalScanTC[float64, *Uint16]{
+		"on empty *Uint16 Optional given non-zero float64 source": optionalScanTC[float64, *Uint16]{
 			src:           123,
 			expectPresent: true,
 			expectValue:   ptrs.Value[Uint16](123),
 		},
-		"on empty uint32 Optional with zero float64 source": optionalScanTC[float64, uint32]{
+		"on empty uint32 Optional given zero float64 source": optionalScanTC[float64, uint32]{
 			src:           0,
 			expectPresent: true,
 			expectValue:   0,
 		},
-		"on empty uint32 Optional with negative non-zero float64 source": optionalScanTC[float64, uint32]{
+		"on empty uint32 Optional given negative non-zero float64 source": optionalScanTC[float64, uint32]{
 			src:         -123,
 			expectError: true,
 		},
-		"on empty uint32 Optional with positive non-zero float64 source": optionalScanTC[float64, uint32]{
+		"on empty uint32 Optional given positive non-zero float64 source": optionalScanTC[float64, uint32]{
 			src:           123,
 			expectPresent: true,
 			expectValue:   123,
 		},
-		"on empty uint32 Optional with positive non-zero float64 source that contains floating points": optionalScanTC[float64, uint32]{
+		"on empty uint32 Optional given positive non-zero float64 source that contains floating points": optionalScanTC[float64, uint32]{
 			src:         123.456,
 			expectError: true,
 		},
-		"on empty uint32 Optional with positive non-zero float64 source that exceeds max int32": optionalScanTC[float64, uint32]{
+		"on empty uint32 Optional given positive non-zero float64 source that exceeds max int32": optionalScanTC[float64, uint32]{
 			src:         math.Floor(math.MaxFloat64),
 			expectError: true,
 		},
-		"on empty *uint32 Optional with zero float64 source": optionalScanTC[float64, *uint32]{
+		"on empty *uint32 Optional given zero float64 source": optionalScanTC[float64, *uint32]{
 			src:           0,
 			expectPresent: true,
 			expectValue:   ptrs.ZeroUint32(),
 		},
-		"on empty *uint32 Optional with non-zero float64 source": optionalScanTC[float64, *uint32]{
+		"on empty *uint32 Optional given non-zero float64 source": optionalScanTC[float64, *uint32]{
 			src:           123,
 			expectPresent: true,
 			expectValue:   ptrs.Uint32(123),
 		},
-		"on empty Uint32 Optional with non-zero float64 source": optionalScanTC[float64, Uint32]{
+		"on empty Uint32 Optional given non-zero float64 source": optionalScanTC[float64, Uint32]{
 			src:           123,
 			expectPresent: true,
 			expectValue:   123,
 		},
-		"on empty Uint32 Optional with non-zero float64 source that contains floating points": optionalScanTC[float64, Uint32]{
+		"on empty Uint32 Optional given non-zero float64 source that contains floating points": optionalScanTC[float64, Uint32]{
 			src:         123.456,
 			expectError: true,
 		},
-		"on empty Uint32 Optional with non-zero float64 source that exceeds max uint32": optionalScanTC[float64, Uint32]{
+		"on empty Uint32 Optional given non-zero float64 source that exceeds max uint32": optionalScanTC[float64, Uint32]{
 			src:         math.Floor(math.MaxFloat64),
 			expectError: true,
 		},
-		"on empty *Uint32 Optional with non-zero float64 source": optionalScanTC[float64, *Uint32]{
+		"on empty *Uint32 Optional given non-zero float64 source": optionalScanTC[float64, *Uint32]{
 			src:           123,
 			expectPresent: true,
 			expectValue:   ptrs.Value[Uint32](123),
 		},
-		"on empty uint64 Optional with zero float64 source": optionalScanTC[float64, uint64]{
+		"on empty uint64 Optional given zero float64 source": optionalScanTC[float64, uint64]{
 			src:           0,
 			expectPresent: true,
 			expectValue:   0,
 		},
-		"on empty uint64 Optional with negative non-zero float64 source": optionalScanTC[float64, uint64]{
+		"on empty uint64 Optional given negative non-zero float64 source": optionalScanTC[float64, uint64]{
 			src:         -123,
 			expectError: true,
 		},
-		"on empty uint64 Optional with positive non-zero float64 source": optionalScanTC[float64, uint64]{
+		"on empty uint64 Optional given positive non-zero float64 source": optionalScanTC[float64, uint64]{
 			src:           123,
 			expectPresent: true,
 			expectValue:   123,
 		},
-		"on empty uint64 Optional with positive non-zero float64 source that contains floating points": optionalScanTC[float64, uint64]{
+		"on empty uint64 Optional given positive non-zero float64 source that contains floating points": optionalScanTC[float64, uint64]{
 			src:         123.456,
 			expectError: true,
 		},
-		"on empty uint64 Optional with positive non-zero float64 source that exceeds max int64": optionalScanTC[float64, uint64]{
+		"on empty uint64 Optional given positive non-zero float64 source that exceeds max int64": optionalScanTC[float64, uint64]{
 			src:         math.Floor(math.MaxFloat64),
 			expectError: true,
 		},
-		"on empty *uint64 Optional with zero float64 source": optionalScanTC[float64, *uint64]{
+		"on empty *uint64 Optional given zero float64 source": optionalScanTC[float64, *uint64]{
 			src:           0,
 			expectPresent: true,
 			expectValue:   ptrs.ZeroUint64(),
 		},
-		"on empty *uint64 Optional with non-zero float64 source": optionalScanTC[float64, *uint64]{
+		"on empty *uint64 Optional given non-zero float64 source": optionalScanTC[float64, *uint64]{
 			src:           123,
 			expectPresent: true,
 			expectValue:   ptrs.Uint64(123),
 		},
-		"on empty Uint64 Optional with non-zero float64 source": optionalScanTC[float64, Uint64]{
+		"on empty Uint64 Optional given non-zero float64 source": optionalScanTC[float64, Uint64]{
 			src:           123,
 			expectPresent: true,
 			expectValue:   123,
 		},
-		"on empty Uint64 Optional with non-zero float64 source that contains floating points": optionalScanTC[float64, Uint64]{
+		"on empty Uint64 Optional given non-zero float64 source that contains floating points": optionalScanTC[float64, Uint64]{
 			src:         123.456,
 			expectError: true,
 		},
-		"on empty Uint64 Optional with non-zero float64 source that exceeds max uint64": optionalScanTC[float64, Uint64]{
+		"on empty Uint64 Optional given non-zero float64 source that exceeds max uint64": optionalScanTC[float64, Uint64]{
 			src:         math.Floor(math.MaxFloat64),
 			expectError: true,
 		},
-		"on empty *Uint64 Optional with non-zero float64 source": optionalScanTC[float64, *Uint64]{
+		"on empty *Uint64 Optional given non-zero float64 source": optionalScanTC[float64, *Uint64]{
 			src:           123,
 			expectPresent: true,
 			expectValue:   ptrs.Value[Uint64](123),
 		},
-		"on empty []byte Optional with zero float64 source": optionalScanTC[float64, []byte]{
+		"on empty []byte Optional given zero float64 source": optionalScanTC[float64, []byte]{
 			src:           0,
 			expectPresent: true,
 			expectValue:   []byte("0"),
 		},
-		"on empty []byte Optional with negative non-zero float64 source": optionalScanTC[float64, []byte]{
+		"on empty []byte Optional given negative non-zero float64 source": optionalScanTC[float64, []byte]{
 			src:           -123.456,
 			expectPresent: true,
 			expectValue:   []byte("-123.456"),
 		},
-		"on empty []byte Optional with positive non-zero float64 source": optionalScanTC[float64, []byte]{
+		"on empty []byte Optional given positive non-zero float64 source": optionalScanTC[float64, []byte]{
 			src:           123.456,
 			expectPresent: true,
 			expectValue:   []byte("123.456"),
 		},
-		"on empty Bytes Optional with non-zero float64 source": optionalScanTC[float64, Bytes]{
+		"on empty Bytes Optional given non-zero float64 source": optionalScanTC[float64, Bytes]{
 			src:           123.456,
 			expectPresent: true,
 			expectValue:   Bytes("123.456"),
 		},
-		"on empty sql.RawBytes Optional with non-zero float64 source": optionalScanTC[float64, sql.RawBytes]{
+		"on empty sql.RawBytes Optional given non-zero float64 source": optionalScanTC[float64, sql.RawBytes]{
 			src:           123.456,
 			expectPresent: true,
 			expectValue:   sql.RawBytes("123.456"),
 		},
-		"on empty any Optional with zero float64 source": optionalScanTC[float64, any]{
+		"on empty any Optional given zero float64 source": optionalScanTC[float64, any]{
 			src:           0,
 			expectPresent: true,
 			expectValue:   float64(0),
 		},
-		"on empty any Optional with non-zero float64 source": optionalScanTC[float64, any]{
+		"on empty any Optional given non-zero float64 source": optionalScanTC[float64, any]{
 			src:           123.456,
 			expectPresent: true,
 			expectValue:   123.456,
 		},
-		"on empty Optional of unsupported slice with non-zero float64 source": optionalScanTC[float64, []uintptr]{
+		"on empty Optional of unsupported slice given non-zero float64 source": optionalScanTC[float64, []uintptr]{
 			src:         123.456,
 			expectError: true,
 		},
-		"on empty Optional of unsupported type with non-zero float64 source": optionalScanTC[float64, uintptr]{
+		"on empty Optional of unsupported type given non-zero float64 source": optionalScanTC[float64, uintptr]{
 			src:         123.456,
 			expectError: true,
 		},
-		"on empty sql.NullFloat64 Optional with non-zero float64 source": optionalScanTC[float64, sql.NullFloat64]{
+		"on empty sql.NullFloat64 Optional given non-zero float64 source": optionalScanTC[float64, sql.NullFloat64]{
 			src:           123.456,
 			expectPresent: true,
 			expectValue:   sql.NullFloat64{Float64: 123.456, Valid: true},
@@ -1796,605 +1911,605 @@ func TestOptional_Scan(t *testing.T) {
 		// Supported destination types (incl. pointers and convertible types):
 		// int, int8, int16, int32, int64, bool, float32, float64, string, uint, uint8, uint16, uint32, uint64, []byte,
 		// sql.RawBytes, any
-		"on empty int Optional with zero int64 source": optionalScanTC[int64, int]{
+		"on empty int Optional given zero int64 source": optionalScanTC[int64, int]{
 			src:           0,
 			expectPresent: true,
 			expectValue:   0,
 		},
-		"on empty int Optional with negative non-zero int64 source": optionalScanTC[int64, int]{
+		"on empty int Optional given negative non-zero int64 source": optionalScanTC[int64, int]{
 			src:           -123,
 			expectPresent: true,
 			expectValue:   -123,
 		},
-		"on empty int Optional with positive non-zero int64 source": optionalScanTC[int64, int]{
+		"on empty int Optional given positive non-zero int64 source": optionalScanTC[int64, int]{
 			src:           123,
 			expectPresent: true,
 			expectValue:   123,
 		},
-		"on empty *int Optional with zero int64 source": optionalScanTC[int64, *int]{
+		"on empty *int Optional given zero int64 source": optionalScanTC[int64, *int]{
 			src:           0,
 			expectPresent: true,
 			expectValue:   ptrs.ZeroInt(),
 		},
-		"on empty *int Optional with non-zero int64 source": optionalScanTC[int64, *int]{
+		"on empty *int Optional given non-zero int64 source": optionalScanTC[int64, *int]{
 			src:           123,
 			expectPresent: true,
 			expectValue:   ptrs.Int(123),
 		},
-		"on empty Int Optional with non-zero int64 source": optionalScanTC[int64, Int]{
+		"on empty Int Optional given non-zero int64 source": optionalScanTC[int64, Int]{
 			src:           123,
 			expectPresent: true,
 			expectValue:   123,
 		},
-		"on empty *Int Optional with non-zero int64 source": optionalScanTC[int64, *Int]{
+		"on empty *Int Optional given non-zero int64 source": optionalScanTC[int64, *Int]{
 			src:           123,
 			expectPresent: true,
 			expectValue:   ptrs.Value[Int](123),
 		},
-		"on empty int8 Optional with zero int64 source": optionalScanTC[int64, int8]{
+		"on empty int8 Optional given zero int64 source": optionalScanTC[int64, int8]{
 			src:           0,
 			expectPresent: true,
 			expectValue:   0,
 		},
-		"on empty int8 Optional with negative non-zero int64 source": optionalScanTC[int64, int8]{
+		"on empty int8 Optional given negative non-zero int64 source": optionalScanTC[int64, int8]{
 			src:           -123,
 			expectPresent: true,
 			expectValue:   -123,
 		},
-		"on empty int8 Optional with negative non-zero int64 source that exceeds min int8": optionalScanTC[int64, int8]{
+		"on empty int8 Optional given negative non-zero int64 source that exceeds min int8": optionalScanTC[int64, int8]{
 			src:         math.MinInt64,
 			expectError: true,
 		},
-		"on empty int8 Optional with positive non-zero int64 source": optionalScanTC[int64, int8]{
+		"on empty int8 Optional given positive non-zero int64 source": optionalScanTC[int64, int8]{
 			src:           123,
 			expectPresent: true,
 			expectValue:   123,
 		},
-		"on empty int8 Optional with positive non-zero int64 source that exceeds max int8": optionalScanTC[int64, int8]{
+		"on empty int8 Optional given positive non-zero int64 source that exceeds max int8": optionalScanTC[int64, int8]{
 			src:         math.MaxInt64,
 			expectError: true,
 		},
-		"on empty *int8 Optional with zero int64 source": optionalScanTC[int64, *int8]{
+		"on empty *int8 Optional given zero int64 source": optionalScanTC[int64, *int8]{
 			src:           0,
 			expectPresent: true,
 			expectValue:   ptrs.ZeroInt8(),
 		},
-		"on empty *int8 Optional with non-zero int64 source": optionalScanTC[int64, *int8]{
+		"on empty *int8 Optional given non-zero int64 source": optionalScanTC[int64, *int8]{
 			src:           123,
 			expectPresent: true,
 			expectValue:   ptrs.Int8(123),
 		},
-		"on empty Int8 Optional with non-zero int64 source": optionalScanTC[int64, Int8]{
+		"on empty Int8 Optional given non-zero int64 source": optionalScanTC[int64, Int8]{
 			src:           123,
 			expectPresent: true,
 			expectValue:   123,
 		},
-		"on empty Int8 Optional with non-zero int64 source that exceeds max int8": optionalScanTC[int64, Int8]{
+		"on empty Int8 Optional given non-zero int64 source that exceeds max int8": optionalScanTC[int64, Int8]{
 			src:         math.MaxInt64,
 			expectError: true,
 		},
-		"on empty *Int8 Optional with non-zero int64 source": optionalScanTC[int64, *Int8]{
+		"on empty *Int8 Optional given non-zero int64 source": optionalScanTC[int64, *Int8]{
 			src:           123,
 			expectPresent: true,
 			expectValue:   ptrs.Value[Int8](123),
 		},
-		"on empty int16 Optional with zero int64 source": optionalScanTC[int64, int16]{
+		"on empty int16 Optional given zero int64 source": optionalScanTC[int64, int16]{
 			src:           0,
 			expectPresent: true,
 			expectValue:   0,
 		},
-		"on empty int16 Optional with negative non-zero int64 source": optionalScanTC[int64, int16]{
+		"on empty int16 Optional given negative non-zero int64 source": optionalScanTC[int64, int16]{
 			src:           -123,
 			expectPresent: true,
 			expectValue:   -123,
 		},
-		"on empty int16 Optional with negative non-zero int64 source that exceeds min int16": optionalScanTC[int64, int16]{
+		"on empty int16 Optional given negative non-zero int64 source that exceeds min int16": optionalScanTC[int64, int16]{
 			src:         math.MinInt64,
 			expectError: true,
 		},
-		"on empty int16 Optional with positive non-zero int64 source": optionalScanTC[int64, int16]{
+		"on empty int16 Optional given positive non-zero int64 source": optionalScanTC[int64, int16]{
 			src:           123,
 			expectPresent: true,
 			expectValue:   123,
 		},
-		"on empty int16 Optional with positive non-zero int64 source that exceeds max int16": optionalScanTC[int64, int16]{
+		"on empty int16 Optional given positive non-zero int64 source that exceeds max int16": optionalScanTC[int64, int16]{
 			src:         math.MaxInt64,
 			expectError: true,
 		},
-		"on empty *int16 Optional with zero int64 source": optionalScanTC[int64, *int16]{
+		"on empty *int16 Optional given zero int64 source": optionalScanTC[int64, *int16]{
 			src:           0,
 			expectPresent: true,
 			expectValue:   ptrs.ZeroInt16(),
 		},
-		"on empty *int16 Optional with non-zero int64 source": optionalScanTC[int64, *int16]{
+		"on empty *int16 Optional given non-zero int64 source": optionalScanTC[int64, *int16]{
 			src:           123,
 			expectPresent: true,
 			expectValue:   ptrs.Int16(123),
 		},
-		"on empty Int16 Optional with non-zero int64 source": optionalScanTC[int64, Int16]{
+		"on empty Int16 Optional given non-zero int64 source": optionalScanTC[int64, Int16]{
 			src:           123,
 			expectPresent: true,
 			expectValue:   123,
 		},
-		"on empty Int16 Optional with non-zero int64 source that exceeds max int16": optionalScanTC[int64, Int16]{
+		"on empty Int16 Optional given non-zero int64 source that exceeds max int16": optionalScanTC[int64, Int16]{
 			src:         math.MaxInt64,
 			expectError: true,
 		},
-		"on empty *Int16 Optional with non-zero int64 source": optionalScanTC[int64, *Int16]{
+		"on empty *Int16 Optional given non-zero int64 source": optionalScanTC[int64, *Int16]{
 			src:           123,
 			expectPresent: true,
 			expectValue:   ptrs.Value[Int16](123),
 		},
-		"on empty int32 Optional with zero int64 source": optionalScanTC[int64, int32]{
+		"on empty int32 Optional given zero int64 source": optionalScanTC[int64, int32]{
 			src:           0,
 			expectPresent: true,
 			expectValue:   0,
 		},
-		"on empty int32 Optional with negative non-zero int64 source": optionalScanTC[int64, int32]{
+		"on empty int32 Optional given negative non-zero int64 source": optionalScanTC[int64, int32]{
 			src:           -123,
 			expectPresent: true,
 			expectValue:   -123,
 		},
-		"on empty int32 Optional with negative non-zero int64 source that exceeds min int32": optionalScanTC[int64, int32]{
+		"on empty int32 Optional given negative non-zero int64 source that exceeds min int32": optionalScanTC[int64, int32]{
 			src:         math.MinInt64,
 			expectError: true,
 		},
-		"on empty int32 Optional with positive non-zero int64 source": optionalScanTC[int64, int32]{
+		"on empty int32 Optional given positive non-zero int64 source": optionalScanTC[int64, int32]{
 			src:           123,
 			expectPresent: true,
 			expectValue:   123,
 		},
-		"on empty int32 Optional with positive non-zero int64 source that exceeds max int32": optionalScanTC[int64, int32]{
+		"on empty int32 Optional given positive non-zero int64 source that exceeds max int32": optionalScanTC[int64, int32]{
 			src:         math.MaxInt64,
 			expectError: true,
 		},
-		"on empty *int32 Optional with zero int64 source": optionalScanTC[int64, *int32]{
+		"on empty *int32 Optional given zero int64 source": optionalScanTC[int64, *int32]{
 			src:           0,
 			expectPresent: true,
 			expectValue:   ptrs.ZeroInt32(),
 		},
-		"on empty *int32 Optional with non-zero int64 source": optionalScanTC[int64, *int32]{
+		"on empty *int32 Optional given non-zero int64 source": optionalScanTC[int64, *int32]{
 			src:           123,
 			expectPresent: true,
 			expectValue:   ptrs.Int32(123),
 		},
-		"on empty Int32 Optional with non-zero int64 source": optionalScanTC[int64, Int32]{
+		"on empty Int32 Optional given non-zero int64 source": optionalScanTC[int64, Int32]{
 			src:           123,
 			expectPresent: true,
 			expectValue:   123,
 		},
-		"on empty Int32 Optional with non-zero int64 source that exceeds max int32": optionalScanTC[int64, Int32]{
+		"on empty Int32 Optional given non-zero int64 source that exceeds max int32": optionalScanTC[int64, Int32]{
 			src:         math.MaxInt64,
 			expectError: true,
 		},
-		"on empty *Int32 Optional with non-zero int64 source": optionalScanTC[int64, *Int32]{
+		"on empty *Int32 Optional given non-zero int64 source": optionalScanTC[int64, *Int32]{
 			src:           123,
 			expectPresent: true,
 			expectValue:   ptrs.Value[Int32](123),
 		},
-		"on empty int64 Optional with zero int64 source": optionalScanTC[int64, int64]{
+		"on empty int64 Optional given zero int64 source": optionalScanTC[int64, int64]{
 			src:           0,
 			expectPresent: true,
 			expectValue:   0,
 		},
-		"on empty int64 Optional with negative non-zero int64 source": optionalScanTC[int64, int64]{
+		"on empty int64 Optional given negative non-zero int64 source": optionalScanTC[int64, int64]{
 			src:           -123,
 			expectPresent: true,
 			expectValue:   -123,
 		},
-		"on empty int64 Optional with positive non-zero int64 source": optionalScanTC[int64, int64]{
+		"on empty int64 Optional given positive non-zero int64 source": optionalScanTC[int64, int64]{
 			src:           123,
 			expectPresent: true,
 			expectValue:   123,
 		},
-		"on empty *int64 Optional with zero int64 source": optionalScanTC[int64, *int64]{
+		"on empty *int64 Optional given zero int64 source": optionalScanTC[int64, *int64]{
 			src:           0,
 			expectPresent: true,
 			expectValue:   ptrs.ZeroInt64(),
 		},
-		"on empty *int64 Optional with non-zero int64 source": optionalScanTC[int64, *int64]{
+		"on empty *int64 Optional given non-zero int64 source": optionalScanTC[int64, *int64]{
 			src:           123,
 			expectPresent: true,
 			expectValue:   ptrs.Int64(123),
 		},
-		"on empty Int64 Optional with non-zero int64 source": optionalScanTC[int64, Int64]{
+		"on empty Int64 Optional given non-zero int64 source": optionalScanTC[int64, Int64]{
 			src:           123,
 			expectPresent: true,
 			expectValue:   123,
 		},
-		"on empty *Int64 Optional with non-zero int64 source": optionalScanTC[int64, *Int64]{
+		"on empty *Int64 Optional given non-zero int64 source": optionalScanTC[int64, *Int64]{
 			src:           123,
 			expectPresent: true,
 			expectValue:   ptrs.Value[Int64](123),
 		},
-		"on empty bool Optional with zero int64 source": optionalScanTC[int64, bool]{
+		"on empty bool Optional given zero int64 source": optionalScanTC[int64, bool]{
 			src:           0,
 			expectPresent: true,
 			expectValue:   false,
 		},
-		"on empty bool Optional with negative non-zero int64 source": optionalScanTC[int64, bool]{
+		"on empty bool Optional given negative non-zero int64 source": optionalScanTC[int64, bool]{
 			src:         -1,
 			expectError: true,
 		},
-		"on empty bool Optional with positive one int64 source": optionalScanTC[int64, bool]{
+		"on empty bool Optional given positive one int64 source": optionalScanTC[int64, bool]{
 			src:           1,
 			expectPresent: true,
 			expectValue:   true,
 		},
-		"on empty bool Optional with positive non-zero int64 source greater than one": optionalScanTC[int64, bool]{
+		"on empty bool Optional given positive non-zero int64 source greater than one": optionalScanTC[int64, bool]{
 			src:         2,
 			expectError: true,
 		},
-		"on empty *bool Optional with zero int64 source": optionalScanTC[int64, *bool]{
+		"on empty *bool Optional given zero int64 source": optionalScanTC[int64, *bool]{
 			src:           0,
 			expectPresent: true,
 			expectValue:   ptrs.False(),
 		},
-		"on empty *bool Optional with positive one int64 source": optionalScanTC[int64, *bool]{
+		"on empty *bool Optional given positive one int64 source": optionalScanTC[int64, *bool]{
 			src:           1,
 			expectPresent: true,
 			expectValue:   ptrs.True(),
 		},
-		"on empty Bool Optional with positive one int64 source": optionalScanTC[int64, Bool]{
+		"on empty Bool Optional given positive one int64 source": optionalScanTC[int64, Bool]{
 			src:           1,
 			expectPresent: true,
 			expectValue:   true,
 		},
-		"on empty *Bool Optional with positive one int64 source": optionalScanTC[int64, *Bool]{
+		"on empty *Bool Optional given positive one int64 source": optionalScanTC[int64, *Bool]{
 			src:           1,
 			expectPresent: true,
 			expectValue:   ptrs.Value[Bool](true),
 		},
-		"on empty float32 Optional with zero int64 source": optionalScanTC[int64, float32]{
+		"on empty float32 Optional given zero int64 source": optionalScanTC[int64, float32]{
 			src:           0,
 			expectPresent: true,
 			expectValue:   0,
 		},
-		"on empty float32 Optional with negative non-zero int64 source": optionalScanTC[int64, float32]{
+		"on empty float32 Optional given negative non-zero int64 source": optionalScanTC[int64, float32]{
 			src:           -123,
 			expectPresent: true,
 			expectValue:   -123,
 		},
-		"on empty float32 Optional with positive non-zero int64 source": optionalScanTC[int64, float32]{
+		"on empty float32 Optional given positive non-zero int64 source": optionalScanTC[int64, float32]{
 			src:           123,
 			expectPresent: true,
 			expectValue:   123,
 		},
-		"on empty *float32 Optional with zero int64 source": optionalScanTC[int64, *float32]{
+		"on empty *float32 Optional given zero int64 source": optionalScanTC[int64, *float32]{
 			src:           0,
 			expectPresent: true,
 			expectValue:   ptrs.ZeroFloat32(),
 		},
-		"on empty *float32 Optional with non-zero int64 source": optionalScanTC[int64, *float32]{
+		"on empty *float32 Optional given non-zero int64 source": optionalScanTC[int64, *float32]{
 			src:           123,
 			expectPresent: true,
 			expectValue:   ptrs.Float32(123),
 		},
-		"on empty Float32 Optional with non-zero int64 source": optionalScanTC[int64, Float32]{
+		"on empty Float32 Optional given non-zero int64 source": optionalScanTC[int64, Float32]{
 			src:           123,
 			expectPresent: true,
 			expectValue:   123,
 		},
-		"on empty *Float32 Optional with non-zero int64 source": optionalScanTC[int64, *Float32]{
+		"on empty *Float32 Optional given non-zero int64 source": optionalScanTC[int64, *Float32]{
 			src:           123,
 			expectPresent: true,
 			expectValue:   ptrs.Value[Float32](123),
 		},
-		"on empty float64 Optional with zero int64 source": optionalScanTC[int64, float64]{
+		"on empty float64 Optional given zero int64 source": optionalScanTC[int64, float64]{
 			src:           0,
 			expectPresent: true,
 			expectValue:   0,
 		},
-		"on empty float64 Optional with negative non-zero int64 source": optionalScanTC[int64, float64]{
+		"on empty float64 Optional given negative non-zero int64 source": optionalScanTC[int64, float64]{
 			src:           -123,
 			expectPresent: true,
 			expectValue:   -123,
 		},
-		"on empty float64 Optional with positive non-zero int64 source": optionalScanTC[int64, float64]{
+		"on empty float64 Optional given positive non-zero int64 source": optionalScanTC[int64, float64]{
 			src:           123,
 			expectPresent: true,
 			expectValue:   123,
 		},
-		"on empty *float64 Optional with zero int64 source": optionalScanTC[int64, *float64]{
+		"on empty *float64 Optional given zero int64 source": optionalScanTC[int64, *float64]{
 			src:           0,
 			expectPresent: true,
 			expectValue:   ptrs.ZeroFloat64(),
 		},
-		"on empty *float64 Optional with non-zero int64 source": optionalScanTC[int64, *float64]{
+		"on empty *float64 Optional given non-zero int64 source": optionalScanTC[int64, *float64]{
 			src:           123,
 			expectPresent: true,
 			expectValue:   ptrs.Float64(123),
 		},
-		"on empty Float64 Optional with non-zero int64 source": optionalScanTC[int64, Float64]{
+		"on empty Float64 Optional given non-zero int64 source": optionalScanTC[int64, Float64]{
 			src:           123,
 			expectPresent: true,
 			expectValue:   123,
 		},
-		"on empty *Float64 Optional with non-zero int64 source": optionalScanTC[int64, *Float64]{
+		"on empty *Float64 Optional given non-zero int64 source": optionalScanTC[int64, *Float64]{
 			src:           123,
 			expectPresent: true,
 			expectValue:   ptrs.Value[Float64](123),
 		},
-		"on empty string Optional with zero int64 source": optionalScanTC[int64, string]{
+		"on empty string Optional given zero int64 source": optionalScanTC[int64, string]{
 			src:           0,
 			expectPresent: true,
 			expectValue:   "0",
 		},
-		"on empty string Optional with negative non-zero int64 source": optionalScanTC[int64, string]{
+		"on empty string Optional given negative non-zero int64 source": optionalScanTC[int64, string]{
 			src:           -123,
 			expectPresent: true,
 			expectValue:   "-123",
 		},
-		"on empty string Optional with positive non-zero int64 source": optionalScanTC[int64, string]{
+		"on empty string Optional given positive non-zero int64 source": optionalScanTC[int64, string]{
 			src:           123,
 			expectPresent: true,
 			expectValue:   "123",
 		},
-		"on empty *string Optional with zero int64 source": optionalScanTC[int64, *string]{
+		"on empty *string Optional given zero int64 source": optionalScanTC[int64, *string]{
 			src:           0,
 			expectPresent: true,
 			expectValue:   ptrs.String("0"),
 		},
-		"on empty *string Optional with non-zero int64 source": optionalScanTC[int64, *string]{
+		"on empty *string Optional given non-zero int64 source": optionalScanTC[int64, *string]{
 			src:           123,
 			expectPresent: true,
 			expectValue:   ptrs.String("123"),
 		},
-		"on empty String Optional with non-zero int64 source": optionalScanTC[int64, String]{
+		"on empty String Optional given non-zero int64 source": optionalScanTC[int64, String]{
 			src:           123,
 			expectPresent: true,
 			expectValue:   "123",
 		},
-		"on empty *String Optional with non-zero int64 source": optionalScanTC[int64, *String]{
+		"on empty *String Optional given non-zero int64 source": optionalScanTC[int64, *String]{
 			src:           123,
 			expectPresent: true,
 			expectValue:   ptrs.Value[String]("123"),
 		},
-		"on empty uint Optional with zero int64 source": optionalScanTC[int64, uint]{
+		"on empty uint Optional given zero int64 source": optionalScanTC[int64, uint]{
 			src:           0,
 			expectPresent: true,
 			expectValue:   0,
 		},
-		"on empty uint Optional with negative non-zero int64 source": optionalScanTC[int64, uint]{
+		"on empty uint Optional given negative non-zero int64 source": optionalScanTC[int64, uint]{
 			src:         -123,
 			expectError: true,
 		},
-		"on empty uint Optional with positive non-zero int64 source": optionalScanTC[int64, uint]{
+		"on empty uint Optional given positive non-zero int64 source": optionalScanTC[int64, uint]{
 			src:           123,
 			expectPresent: true,
 			expectValue:   123,
 		},
-		"on empty *uint Optional with zero int64 source": optionalScanTC[int64, *uint]{
+		"on empty *uint Optional given zero int64 source": optionalScanTC[int64, *uint]{
 			src:           0,
 			expectPresent: true,
 			expectValue:   ptrs.ZeroUint(),
 		},
-		"on empty *uint Optional with non-zero int64 source": optionalScanTC[int64, *uint]{
+		"on empty *uint Optional given non-zero int64 source": optionalScanTC[int64, *uint]{
 			src:           123,
 			expectPresent: true,
 			expectValue:   ptrs.Uint(123),
 		},
-		"on empty Uint Optional with non-zero int64 source": optionalScanTC[int64, Uint]{
+		"on empty Uint Optional given non-zero int64 source": optionalScanTC[int64, Uint]{
 			src:           123,
 			expectPresent: true,
 			expectValue:   123,
 		},
-		"on empty *Uint Optional with non-zero int64 source": optionalScanTC[int64, *Uint]{
+		"on empty *Uint Optional given non-zero int64 source": optionalScanTC[int64, *Uint]{
 			src:           123,
 			expectPresent: true,
 			expectValue:   ptrs.Value[Uint](123),
 		},
-		"on empty uint8 Optional with zero int64 source": optionalScanTC[int64, uint8]{
+		"on empty uint8 Optional given zero int64 source": optionalScanTC[int64, uint8]{
 			src:           0,
 			expectPresent: true,
 			expectValue:   0,
 		},
-		"on empty uint8 Optional with negative non-zero int64 source": optionalScanTC[int64, uint8]{
+		"on empty uint8 Optional given negative non-zero int64 source": optionalScanTC[int64, uint8]{
 			src:         -123,
 			expectError: true,
 		},
-		"on empty uint8 Optional with positive non-zero int64 source": optionalScanTC[int64, uint8]{
+		"on empty uint8 Optional given positive non-zero int64 source": optionalScanTC[int64, uint8]{
 			src:           123,
 			expectPresent: true,
 			expectValue:   123,
 		},
-		"on empty uint8 Optional with positive non-zero int64 source that exceeds max uint8": optionalScanTC[int64, uint8]{
+		"on empty uint8 Optional given positive non-zero int64 source that exceeds max uint8": optionalScanTC[int64, uint8]{
 			src:         math.MaxInt64,
 			expectError: true,
 		},
-		"on empty *uint8 Optional with zero int64 source": optionalScanTC[int64, *uint8]{
+		"on empty *uint8 Optional given zero int64 source": optionalScanTC[int64, *uint8]{
 			src:           0,
 			expectPresent: true,
 			expectValue:   ptrs.ZeroUint8(),
 		},
-		"on empty *uint8 Optional with non-zero int64 source": optionalScanTC[int64, *uint8]{
+		"on empty *uint8 Optional given non-zero int64 source": optionalScanTC[int64, *uint8]{
 			src:           123,
 			expectPresent: true,
 			expectValue:   ptrs.Uint8(123),
 		},
-		"on empty Uint8 Optional with non-zero int64 source": optionalScanTC[int64, Uint8]{
+		"on empty Uint8 Optional given non-zero int64 source": optionalScanTC[int64, Uint8]{
 			src:           123,
 			expectPresent: true,
 			expectValue:   123,
 		},
-		"on empty Uint8 Optional with non-zero int64 source that exceeds max uint8": optionalScanTC[int64, Uint8]{
+		"on empty Uint8 Optional given non-zero int64 source that exceeds max uint8": optionalScanTC[int64, Uint8]{
 			src:         math.MaxInt64,
 			expectError: true,
 		},
-		"on empty *Uint8 Optional with non-zero int64 source": optionalScanTC[int64, *Uint8]{
+		"on empty *Uint8 Optional given non-zero int64 source": optionalScanTC[int64, *Uint8]{
 			src:           123,
 			expectPresent: true,
 			expectValue:   ptrs.Value[Uint8](123),
 		},
-		"on empty uint16 Optional with zero int64 source": optionalScanTC[int64, uint16]{
+		"on empty uint16 Optional given zero int64 source": optionalScanTC[int64, uint16]{
 			src:           0,
 			expectPresent: true,
 			expectValue:   0,
 		},
-		"on empty uint16 Optional with negative non-zero int64 source": optionalScanTC[int64, uint16]{
+		"on empty uint16 Optional given negative non-zero int64 source": optionalScanTC[int64, uint16]{
 			src:         -123,
 			expectError: true,
 		},
-		"on empty uint16 Optional with positive non-zero int64 source": optionalScanTC[int64, uint16]{
+		"on empty uint16 Optional given positive non-zero int64 source": optionalScanTC[int64, uint16]{
 			src:           123,
 			expectPresent: true,
 			expectValue:   123,
 		},
-		"on empty uint16 Optional with positive non-zero int64 source that exceeds max uint16": optionalScanTC[int64, uint16]{
+		"on empty uint16 Optional given positive non-zero int64 source that exceeds max uint16": optionalScanTC[int64, uint16]{
 			src:         math.MaxInt64,
 			expectError: true,
 		},
-		"on empty *uint16 Optional with zero int64 source": optionalScanTC[int64, *uint16]{
+		"on empty *uint16 Optional given zero int64 source": optionalScanTC[int64, *uint16]{
 			src:           0,
 			expectPresent: true,
 			expectValue:   ptrs.ZeroUint16(),
 		},
-		"on empty *uint16 Optional with non-zero int64 source": optionalScanTC[int64, *uint16]{
+		"on empty *uint16 Optional given non-zero int64 source": optionalScanTC[int64, *uint16]{
 			src:           123,
 			expectPresent: true,
 			expectValue:   ptrs.Uint16(123),
 		},
-		"on empty Uint16 Optional with non-zero int64 source": optionalScanTC[int64, Uint16]{
+		"on empty Uint16 Optional given non-zero int64 source": optionalScanTC[int64, Uint16]{
 			src:           123,
 			expectPresent: true,
 			expectValue:   123,
 		},
-		"on empty Uint16 Optional with non-zero int64 source that exceeds max uint16": optionalScanTC[int64, Uint16]{
+		"on empty Uint16 Optional given non-zero int64 source that exceeds max uint16": optionalScanTC[int64, Uint16]{
 			src:         math.MaxInt64,
 			expectError: true,
 		},
-		"on empty *Uint16 Optional with non-zero int64 source": optionalScanTC[int64, *Uint16]{
+		"on empty *Uint16 Optional given non-zero int64 source": optionalScanTC[int64, *Uint16]{
 			src:           123,
 			expectPresent: true,
 			expectValue:   ptrs.Value[Uint16](123),
 		},
-		"on empty uint32 Optional with zero int64 source": optionalScanTC[int64, uint32]{
+		"on empty uint32 Optional given zero int64 source": optionalScanTC[int64, uint32]{
 			src:           0,
 			expectPresent: true,
 			expectValue:   0,
 		},
-		"on empty uint32 Optional with negative non-zero int64 source": optionalScanTC[int64, uint32]{
+		"on empty uint32 Optional given negative non-zero int64 source": optionalScanTC[int64, uint32]{
 			src:         -123,
 			expectError: true,
 		},
-		"on empty uint32 Optional with positive non-zero int64 source": optionalScanTC[int64, uint32]{
+		"on empty uint32 Optional given positive non-zero int64 source": optionalScanTC[int64, uint32]{
 			src:           123,
 			expectPresent: true,
 			expectValue:   123,
 		},
-		"on empty *uint32 Optional with zero int64 source": optionalScanTC[int64, *uint32]{
+		"on empty *uint32 Optional given zero int64 source": optionalScanTC[int64, *uint32]{
 			src:           0,
 			expectPresent: true,
 			expectValue:   ptrs.ZeroUint32(),
 		},
-		"on empty *uint32 Optional with non-zero int64 source": optionalScanTC[int64, *uint32]{
+		"on empty *uint32 Optional given non-zero int64 source": optionalScanTC[int64, *uint32]{
 			src:           123,
 			expectPresent: true,
 			expectValue:   ptrs.Uint32(123),
 		},
-		"on empty Uint32 Optional with non-zero int64 source": optionalScanTC[int64, Uint32]{
+		"on empty Uint32 Optional given non-zero int64 source": optionalScanTC[int64, Uint32]{
 			src:           123,
 			expectPresent: true,
 			expectValue:   123,
 		},
-		"on empty *Uint32 Optional with non-zero int64 source": optionalScanTC[int64, *Uint32]{
+		"on empty *Uint32 Optional given non-zero int64 source": optionalScanTC[int64, *Uint32]{
 			src:           123,
 			expectPresent: true,
 			expectValue:   ptrs.Value[Uint32](123),
 		},
-		"on empty uint64 Optional with zero int64 source": optionalScanTC[int64, uint64]{
+		"on empty uint64 Optional given zero int64 source": optionalScanTC[int64, uint64]{
 			src:           0,
 			expectPresent: true,
 			expectValue:   0,
 		},
-		"on empty uint64 Optional with negative non-zero int64 source": optionalScanTC[int64, uint64]{
+		"on empty uint64 Optional given negative non-zero int64 source": optionalScanTC[int64, uint64]{
 			src:         -123,
 			expectError: true,
 		},
-		"on empty uint64 Optional with positive non-zero int64 source": optionalScanTC[int64, uint64]{
+		"on empty uint64 Optional given positive non-zero int64 source": optionalScanTC[int64, uint64]{
 			src:           123,
 			expectPresent: true,
 			expectValue:   123,
 		},
-		"on empty *uint64 Optional with zero int64 source": optionalScanTC[int64, *uint64]{
+		"on empty *uint64 Optional given zero int64 source": optionalScanTC[int64, *uint64]{
 			src:           0,
 			expectPresent: true,
 			expectValue:   ptrs.ZeroUint64(),
 		},
-		"on empty *uint64 Optional with non-zero int64 source": optionalScanTC[int64, *uint64]{
+		"on empty *uint64 Optional given non-zero int64 source": optionalScanTC[int64, *uint64]{
 			src:           123,
 			expectPresent: true,
 			expectValue:   ptrs.Uint64(123),
 		},
-		"on empty Uint64 Optional with non-zero int64 source": optionalScanTC[int64, Uint64]{
+		"on empty Uint64 Optional given non-zero int64 source": optionalScanTC[int64, Uint64]{
 			src:           123,
 			expectPresent: true,
 			expectValue:   123,
 		},
-		"on empty *Uint64 Optional with non-zero int64 source": optionalScanTC[int64, *Uint64]{
+		"on empty *Uint64 Optional given non-zero int64 source": optionalScanTC[int64, *Uint64]{
 			src:           123,
 			expectPresent: true,
 			expectValue:   ptrs.Value[Uint64](123),
 		},
-		"on empty []byte Optional with zero int64 source": optionalScanTC[int64, []byte]{
+		"on empty []byte Optional given zero int64 source": optionalScanTC[int64, []byte]{
 			src:           0,
 			expectPresent: true,
 			expectValue:   []byte("0"),
 		},
-		"on empty []byte Optional with negative non-zero int64 source": optionalScanTC[int64, []byte]{
+		"on empty []byte Optional given negative non-zero int64 source": optionalScanTC[int64, []byte]{
 			src:           -123,
 			expectPresent: true,
 			expectValue:   []byte("-123"),
 		},
-		"on empty []byte Optional with positive non-zero int64 source": optionalScanTC[int64, []byte]{
+		"on empty []byte Optional given positive non-zero int64 source": optionalScanTC[int64, []byte]{
 			src:           123,
 			expectPresent: true,
 			expectValue:   []byte("123"),
 		},
-		"on empty Bytes Optional with non-zero int64 source": optionalScanTC[int64, Bytes]{
+		"on empty Bytes Optional given non-zero int64 source": optionalScanTC[int64, Bytes]{
 			src:           123,
 			expectPresent: true,
 			expectValue:   Bytes("123"),
 		},
-		"on empty sql.RawBytes Optional with non-zero int64 source": optionalScanTC[int64, sql.RawBytes]{
+		"on empty sql.RawBytes Optional given non-zero int64 source": optionalScanTC[int64, sql.RawBytes]{
 			src:           123,
 			expectPresent: true,
 			expectValue:   sql.RawBytes("123"),
 		},
-		"on empty any Optional with zero int64 source": optionalScanTC[int64, any]{
+		"on empty any Optional given zero int64 source": optionalScanTC[int64, any]{
 			src:           0,
 			expectPresent: true,
 			expectValue:   int64(0),
 		},
-		"on empty any Optional with non-zero int64 source": optionalScanTC[int64, any]{
+		"on empty any Optional given non-zero int64 source": optionalScanTC[int64, any]{
 			src:           123,
 			expectPresent: true,
 			expectValue:   int64(123),
 		},
-		"on empty Optional of unsupported slice with non-zero int64 source": optionalScanTC[int64, []uintptr]{
+		"on empty Optional of unsupported slice given non-zero int64 source": optionalScanTC[int64, []uintptr]{
 			src:         123,
 			expectError: true,
 		},
-		"on empty Optional of unsupported type with non-zero int64 source": optionalScanTC[int64, uintptr]{
+		"on empty Optional of unsupported type given non-zero int64 source": optionalScanTC[int64, uintptr]{
 			src:         123,
 			expectError: true,
 		},
-		"on empty sql.NullByte Optional with non-zero int source": optionalScanTC[int64, sql.NullByte]{
+		"on empty sql.NullByte Optional given non-zero int source": optionalScanTC[int64, sql.NullByte]{
 			src:           123,
 			expectPresent: true,
 			expectValue:   sql.NullByte{Byte: 123, Valid: true},
 		},
-		"on empty sql.NullInt16 Optional with non-zero int64 source": optionalScanTC[int64, sql.NullInt16]{
+		"on empty sql.NullInt16 Optional given non-zero int64 source": optionalScanTC[int64, sql.NullInt16]{
 			src:           123,
 			expectPresent: true,
 			expectValue:   sql.NullInt16{Int16: 123, Valid: true},
 		},
-		"on empty sql.NullInt32 Optional with non-zero int64 source": optionalScanTC[int64, sql.NullInt32]{
+		"on empty sql.NullInt32 Optional given non-zero int64 source": optionalScanTC[int64, sql.NullInt32]{
 			src:           123,
 			expectPresent: true,
 			expectValue:   sql.NullInt32{Int32: 123, Valid: true},
 		},
-		"on empty sql.NullInt64 Optional with non-zero int64 source": optionalScanTC[int64, sql.NullInt64]{
+		"on empty sql.NullInt64 Optional given non-zero int64 source": optionalScanTC[int64, sql.NullInt64]{
 			src:           123,
 			expectPresent: true,
 			expectValue:   sql.NullInt64{Int64: 123, Valid: true},
@@ -2403,894 +2518,894 @@ func TestOptional_Scan(t *testing.T) {
 		// Supported destination types (incl. pointers and convertible types):
 		// string, bool, float32, float64, int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64, []byte,
 		// sql.RawBytes, any
-		"on empty string Optional with zero string source": optionalScanTC[string, string]{
+		"on empty string Optional given zero string source": optionalScanTC[string, string]{
 			src:           "",
 			expectPresent: true,
 			expectValue:   "",
 		},
-		"on empty string Optional with non-zero string source": optionalScanTC[string, string]{
+		"on empty string Optional given non-zero string source": optionalScanTC[string, string]{
 			src:           "abc",
 			expectPresent: true,
 			expectValue:   "abc",
 		},
-		"on empty *string Optional with zero string source": optionalScanTC[string, *string]{
+		"on empty *string Optional given zero string source": optionalScanTC[string, *string]{
 			src:           "",
 			expectPresent: true,
 			expectValue:   ptrs.ZeroString(),
 		},
-		"on empty *string Optional with non-zero string source": optionalScanTC[string, *string]{
+		"on empty *string Optional given non-zero string source": optionalScanTC[string, *string]{
 			src:           "abc",
 			expectPresent: true,
 			expectValue:   ptrs.String("abc"),
 		},
-		"on empty String Optional with non-zero string source": optionalScanTC[string, String]{
+		"on empty String Optional given non-zero string source": optionalScanTC[string, String]{
 			src:           "abc",
 			expectPresent: true,
 			expectValue:   "abc",
 		},
-		"on empty *String Optional with non-zero string source": optionalScanTC[string, *String]{
+		"on empty *String Optional given non-zero string source": optionalScanTC[string, *String]{
 			src:           "abc",
 			expectPresent: true,
 			expectValue:   ptrs.Value[String]("abc"),
 		},
-		"on empty bool Optional with zero string source": optionalScanTC[string, bool]{
+		"on empty bool Optional given zero string source": optionalScanTC[string, bool]{
 			src:         "",
 			expectError: true,
 		},
-		"on empty bool Optional with false string source": optionalScanTC[string, bool]{
+		"on empty bool Optional given false string source": optionalScanTC[string, bool]{
 			src:           "false",
 			expectPresent: true,
 			expectValue:   false,
 		},
-		"on empty bool Optional with true string source": optionalScanTC[string, bool]{
+		"on empty bool Optional given true string source": optionalScanTC[string, bool]{
 			src:           "true",
 			expectPresent: true,
 			expectValue:   true,
 		},
-		"on empty bool Optional with non-boolean string source": optionalScanTC[string, bool]{
+		"on empty bool Optional given non-boolean string source": optionalScanTC[string, bool]{
 			src:         "abc",
 			expectError: true,
 		},
-		"on empty *bool Optional with zero string source": optionalScanTC[string, *bool]{
+		"on empty *bool Optional given zero string source": optionalScanTC[string, *bool]{
 			src:         "",
 			expectError: true,
 		},
-		"on empty *bool Optional with boolean string source": optionalScanTC[string, *bool]{
+		"on empty *bool Optional given boolean string source": optionalScanTC[string, *bool]{
 			src:           "true",
 			expectPresent: true,
 			expectValue:   ptrs.True(),
 		},
-		"on empty *bool Optional with non-boolean string source": optionalScanTC[string, *bool]{
+		"on empty *bool Optional given non-boolean string source": optionalScanTC[string, *bool]{
 			src:         "abc",
 			expectError: true,
 		},
-		"on empty Bool Optional with boolean string source": optionalScanTC[string, Bool]{
+		"on empty Bool Optional given boolean string source": optionalScanTC[string, Bool]{
 			src:           "true",
 			expectPresent: true,
 			expectValue:   true,
 		},
-		"on empty *Bool Optional with boolean string source": optionalScanTC[string, *Bool]{
+		"on empty *Bool Optional given boolean string source": optionalScanTC[string, *Bool]{
 			src:           "false",
 			expectPresent: true,
 			expectValue:   ptrs.Value[Bool](false),
 		},
-		"on empty float32 Optional with zero string source": optionalScanTC[string, float32]{
+		"on empty float32 Optional given zero string source": optionalScanTC[string, float32]{
 			src:         "",
 			expectError: true,
 		},
-		"on empty float32 Optional with zero float string source": optionalScanTC[string, float32]{
+		"on empty float32 Optional given zero float string source": optionalScanTC[string, float32]{
 			src:           "0",
 			expectPresent: true,
 			expectValue:   0,
 		},
-		"on empty float32 Optional with negative non-zero float string source": optionalScanTC[string, float32]{
+		"on empty float32 Optional given negative non-zero float string source": optionalScanTC[string, float32]{
 			src:           "-123.456",
 			expectPresent: true,
 			expectValue:   -123.456,
 		},
-		"on empty float32 Optional with negative non-zero float string source that exceeds min float32": optionalScanTC[string, float32]{
+		"on empty float32 Optional given negative non-zero float string source that exceeds min float32": optionalScanTC[string, float32]{
 			src:         minFloat64String,
 			expectError: true,
 		},
-		"on empty float32 Optional with positive non-zero float string source": optionalScanTC[string, float32]{
+		"on empty float32 Optional given positive non-zero float string source": optionalScanTC[string, float32]{
 			src:           "123.456",
 			expectPresent: true,
 			expectValue:   123.456,
 		},
-		"on empty float32 Optional with positive non-zero float string source that exceeds max float32": optionalScanTC[string, float32]{
+		"on empty float32 Optional given positive non-zero float string source that exceeds max float32": optionalScanTC[string, float32]{
 			src:         maxFloat64String,
 			expectError: true,
 		},
-		"on empty float32 Optional with non-float string source": optionalScanTC[string, float32]{
+		"on empty float32 Optional given non-float string source": optionalScanTC[string, float32]{
 			src:         "abc",
 			expectError: true,
 		},
-		"on empty *float32 Optional with zero string source": optionalScanTC[string, *float32]{
+		"on empty *float32 Optional given zero string source": optionalScanTC[string, *float32]{
 			src:         "",
 			expectError: true,
 		},
-		"on empty *float32 Optional with zero float string source": optionalScanTC[string, *float32]{
+		"on empty *float32 Optional given zero float string source": optionalScanTC[string, *float32]{
 			src:           "0",
 			expectPresent: true,
 			expectValue:   ptrs.ZeroFloat32(),
 		},
-		"on empty *float32 Optional with negative float string source": optionalScanTC[string, *float32]{
+		"on empty *float32 Optional given negative float string source": optionalScanTC[string, *float32]{
 			src:           "-123.456",
 			expectPresent: true,
 			expectValue:   ptrs.Float32(-123.456),
 		},
-		"on empty *float32 Optional with positive float string source": optionalScanTC[string, *float32]{
+		"on empty *float32 Optional given positive float string source": optionalScanTC[string, *float32]{
 			src:           "123.456",
 			expectPresent: true,
 			expectValue:   ptrs.Float32(123.456),
 		},
-		"on empty *float32 Optional with non-float string source": optionalScanTC[string, *float32]{
+		"on empty *float32 Optional given non-float string source": optionalScanTC[string, *float32]{
 			src:         "abc",
 			expectError: true,
 		},
-		"on empty Float32 Optional with float string source": optionalScanTC[string, Float32]{
+		"on empty Float32 Optional given float string source": optionalScanTC[string, Float32]{
 			src:           "123.456",
 			expectPresent: true,
 			expectValue:   123.456,
 		},
-		"on empty *Float32 Optional with float string source": optionalScanTC[string, *Float32]{
+		"on empty *Float32 Optional given float string source": optionalScanTC[string, *Float32]{
 			src:           "123.456",
 			expectPresent: true,
 			expectValue:   ptrs.Value[Float32](123.456),
 		},
-		"on empty float64 Optional with zero string source": optionalScanTC[string, float64]{
+		"on empty float64 Optional given zero string source": optionalScanTC[string, float64]{
 			src:         "",
 			expectError: true,
 		},
-		"on empty float64 Optional with zero float string source": optionalScanTC[string, float64]{
+		"on empty float64 Optional given zero float string source": optionalScanTC[string, float64]{
 			src:           "0",
 			expectPresent: true,
 			expectValue:   0,
 		},
-		"on empty float64 Optional with negative non-zero float string source": optionalScanTC[string, float64]{
+		"on empty float64 Optional given negative non-zero float string source": optionalScanTC[string, float64]{
 			src:           "-123.456",
 			expectPresent: true,
 			expectValue:   -123.456,
 		},
-		"on empty float64 Optional with negative non-zero float string source that exceeds min float64": optionalScanTC[string, float64]{
+		"on empty float64 Optional given negative non-zero float string source that exceeds min float64": optionalScanTC[string, float64]{
 			src:         minFloat64String + "0",
 			expectError: true,
 		},
-		"on empty float64 Optional with positive non-zero float string source": optionalScanTC[string, float64]{
+		"on empty float64 Optional given positive non-zero float string source": optionalScanTC[string, float64]{
 			src:           "123.456",
 			expectPresent: true,
 			expectValue:   123.456,
 		},
-		"on empty float64 Optional with positive non-zero float string source that exceeds max float64": optionalScanTC[string, float64]{
+		"on empty float64 Optional given positive non-zero float string source that exceeds max float64": optionalScanTC[string, float64]{
 			src:         maxFloat64String + "0",
 			expectError: true,
 		},
-		"on empty float64 Optional with non-float string source": optionalScanTC[string, float64]{
+		"on empty float64 Optional given non-float string source": optionalScanTC[string, float64]{
 			src:         "abc",
 			expectError: true,
 		},
-		"on empty *float64 Optional with zero string source": optionalScanTC[string, *float64]{
+		"on empty *float64 Optional given zero string source": optionalScanTC[string, *float64]{
 			src:         "",
 			expectError: true,
 		},
-		"on empty *float64 Optional with zero float string source": optionalScanTC[string, *float64]{
+		"on empty *float64 Optional given zero float string source": optionalScanTC[string, *float64]{
 			src:           "0",
 			expectPresent: true,
 			expectValue:   ptrs.ZeroFloat64(),
 		},
-		"on empty *float64 Optional with negative float string source": optionalScanTC[string, *float64]{
+		"on empty *float64 Optional given negative float string source": optionalScanTC[string, *float64]{
 			src:           "-123.456",
 			expectPresent: true,
 			expectValue:   ptrs.Float64(-123.456),
 		},
-		"on empty *float64 Optional with positive float string source": optionalScanTC[string, *float64]{
+		"on empty *float64 Optional given positive float string source": optionalScanTC[string, *float64]{
 			src:           "123.456",
 			expectPresent: true,
 			expectValue:   ptrs.Float64(123.456),
 		},
-		"on empty *float64 Optional with non-float string source": optionalScanTC[string, *float64]{
+		"on empty *float64 Optional given non-float string source": optionalScanTC[string, *float64]{
 			src:         "abc",
 			expectError: true,
 		},
-		"on empty Float64 Optional with float string source": optionalScanTC[string, Float64]{
+		"on empty Float64 Optional given float string source": optionalScanTC[string, Float64]{
 			src:           "123.456",
 			expectPresent: true,
 			expectValue:   123.456,
 		},
-		"on empty *Float64 Optional with float string source": optionalScanTC[string, *Float64]{
+		"on empty *Float64 Optional given float string source": optionalScanTC[string, *Float64]{
 			src:           "123.456",
 			expectPresent: true,
 			expectValue:   ptrs.Value[Float64](123.456),
 		},
-		"on empty int Optional with zero string source": optionalScanTC[string, int]{
+		"on empty int Optional given zero string source": optionalScanTC[string, int]{
 			src:         "",
 			expectError: true,
 		},
-		"on empty int Optional with zero int string source": optionalScanTC[string, int]{
+		"on empty int Optional given zero int string source": optionalScanTC[string, int]{
 			src:           "0",
 			expectPresent: true,
 			expectValue:   0,
 		},
-		"on empty int Optional with negative non-zero int string source": optionalScanTC[string, int]{
+		"on empty int Optional given negative non-zero int string source": optionalScanTC[string, int]{
 			src:           "-123",
 			expectPresent: true,
 			expectValue:   -123,
 		},
-		"on empty int Optional with negative non-zero int string source that contains floating points": optionalScanTC[string, int]{
+		"on empty int Optional given negative non-zero int string source that contains floating points": optionalScanTC[string, int]{
 			src:         "-123.456",
 			expectError: true,
 		},
-		"on empty int Optional with negative non-zero int string source that exceeds min int": optionalScanTC[string, int]{
+		"on empty int Optional given negative non-zero int string source that exceeds min int": optionalScanTC[string, int]{
 			src:         minInt64String + "0",
 			expectError: true,
 		},
-		"on empty int Optional with positive non-zero int string source": optionalScanTC[string, int]{
+		"on empty int Optional given positive non-zero int string source": optionalScanTC[string, int]{
 			src:           "123",
 			expectPresent: true,
 			expectValue:   123,
 		},
-		"on empty int Optional with positive non-zero int string source that contains floating points": optionalScanTC[string, int]{
+		"on empty int Optional given positive non-zero int string source that contains floating points": optionalScanTC[string, int]{
 			src:         "123.456",
 			expectError: true,
 		},
-		"on empty int Optional with positive non-zero int string source that exceeds max int": optionalScanTC[string, int]{
+		"on empty int Optional given positive non-zero int string source that exceeds max int": optionalScanTC[string, int]{
 			src:         maxInt64String + "0",
 			expectError: true,
 		},
-		"on empty int Optional with non-int string source": optionalScanTC[string, int]{
+		"on empty int Optional given non-int string source": optionalScanTC[string, int]{
 			src:         "abc",
 			expectError: true,
 		},
-		"on empty *int Optional with zero string source": optionalScanTC[string, *int]{
+		"on empty *int Optional given zero string source": optionalScanTC[string, *int]{
 			src:         "",
 			expectError: true,
 		},
-		"on empty *int Optional with zero int string source": optionalScanTC[string, *int]{
+		"on empty *int Optional given zero int string source": optionalScanTC[string, *int]{
 			src:           "0",
 			expectPresent: true,
 			expectValue:   ptrs.ZeroInt(),
 		},
-		"on empty *int Optional with negative int string source": optionalScanTC[string, *int]{
+		"on empty *int Optional given negative int string source": optionalScanTC[string, *int]{
 			src:           "-123",
 			expectPresent: true,
 			expectValue:   ptrs.Int(-123),
 		},
-		"on empty *int Optional with positive int string source": optionalScanTC[string, *int]{
+		"on empty *int Optional given positive int string source": optionalScanTC[string, *int]{
 			src:           "123",
 			expectPresent: true,
 			expectValue:   ptrs.Int(123),
 		},
-		"on empty *int Optional with non-int string source": optionalScanTC[string, *int]{
+		"on empty *int Optional given non-int string source": optionalScanTC[string, *int]{
 			src:         "abc",
 			expectError: true,
 		},
-		"on empty Int Optional with int string source": optionalScanTC[string, Int]{
+		"on empty Int Optional given int string source": optionalScanTC[string, Int]{
 			src:           "123",
 			expectPresent: true,
 			expectValue:   123,
 		},
-		"on empty *Int Optional with int string source": optionalScanTC[string, *Int]{
+		"on empty *Int Optional given int string source": optionalScanTC[string, *Int]{
 			src:           "123",
 			expectPresent: true,
 			expectValue:   ptrs.Value[Int](123),
 		},
-		"on empty int8 Optional with zero string source": optionalScanTC[string, int8]{
+		"on empty int8 Optional given zero string source": optionalScanTC[string, int8]{
 			src:         "",
 			expectError: true,
 		},
-		"on empty int8 Optional with zero int string source": optionalScanTC[string, int8]{
+		"on empty int8 Optional given zero int string source": optionalScanTC[string, int8]{
 			src:           "0",
 			expectPresent: true,
 			expectValue:   0,
 		},
-		"on empty int8 Optional with negative non-zero int string source": optionalScanTC[string, int8]{
+		"on empty int8 Optional given negative non-zero int string source": optionalScanTC[string, int8]{
 			src:           "-123",
 			expectPresent: true,
 			expectValue:   -123,
 		},
-		"on empty int8 Optional with negative non-zero int string source that contains floating points": optionalScanTC[string, int8]{
+		"on empty int8 Optional given negative non-zero int string source that contains floating points": optionalScanTC[string, int8]{
 			src:         "-123.456",
 			expectError: true,
 		},
-		"on empty int8 Optional with negative non-zero int string source that exceeds min int8": optionalScanTC[string, int8]{
+		"on empty int8 Optional given negative non-zero int string source that exceeds min int8": optionalScanTC[string, int8]{
 			src:         minInt64String,
 			expectError: true,
 		},
-		"on empty int8 Optional with positive non-zero int string source": optionalScanTC[string, int8]{
+		"on empty int8 Optional given positive non-zero int string source": optionalScanTC[string, int8]{
 			src:           "123",
 			expectPresent: true,
 			expectValue:   123,
 		},
-		"on empty int8 Optional with positive non-zero int string source that contains floating points": optionalScanTC[string, int8]{
+		"on empty int8 Optional given positive non-zero int string source that contains floating points": optionalScanTC[string, int8]{
 			src:         "123.456",
 			expectError: true,
 		},
-		"on empty int8 Optional with positive non-zero int string source that exceeds max int8": optionalScanTC[string, int8]{
+		"on empty int8 Optional given positive non-zero int string source that exceeds max int8": optionalScanTC[string, int8]{
 			src:         maxInt64String,
 			expectError: true,
 		},
-		"on empty int8 Optional with non-int string source": optionalScanTC[string, int8]{
+		"on empty int8 Optional given non-int string source": optionalScanTC[string, int8]{
 			src:         "abc",
 			expectError: true,
 		},
-		"on empty *int8 Optional with zero string source": optionalScanTC[string, *int8]{
+		"on empty *int8 Optional given zero string source": optionalScanTC[string, *int8]{
 			src:         "",
 			expectError: true,
 		},
-		"on empty *int8 Optional with zero int string source": optionalScanTC[string, *int8]{
+		"on empty *int8 Optional given zero int string source": optionalScanTC[string, *int8]{
 			src:           "0",
 			expectPresent: true,
 			expectValue:   ptrs.ZeroInt8(),
 		},
-		"on empty *int8 Optional with negative int string source": optionalScanTC[string, *int8]{
+		"on empty *int8 Optional given negative int string source": optionalScanTC[string, *int8]{
 			src:           "-123",
 			expectPresent: true,
 			expectValue:   ptrs.Int8(-123),
 		},
-		"on empty *int8 Optional with positive int string source": optionalScanTC[string, *int8]{
+		"on empty *int8 Optional given positive int string source": optionalScanTC[string, *int8]{
 			src:           "123",
 			expectPresent: true,
 			expectValue:   ptrs.Int8(123),
 		},
-		"on empty *int8 Optional with non-int string source": optionalScanTC[string, *int8]{
+		"on empty *int8 Optional given non-int string source": optionalScanTC[string, *int8]{
 			src:         "abc",
 			expectError: true,
 		},
-		"on empty Int8 Optional with int string source": optionalScanTC[string, Int8]{
+		"on empty Int8 Optional given int string source": optionalScanTC[string, Int8]{
 			src:           "123",
 			expectPresent: true,
 			expectValue:   123,
 		},
-		"on empty *Int8 Optional with int string source": optionalScanTC[string, *Int8]{
+		"on empty *Int8 Optional given int string source": optionalScanTC[string, *Int8]{
 			src:           "123",
 			expectPresent: true,
 			expectValue:   ptrs.Value[Int8](123),
 		},
-		"on empty int16 Optional with zero string source": optionalScanTC[string, int16]{
+		"on empty int16 Optional given zero string source": optionalScanTC[string, int16]{
 			src:         "",
 			expectError: true,
 		},
-		"on empty int16 Optional with zero int string source": optionalScanTC[string, int16]{
+		"on empty int16 Optional given zero int string source": optionalScanTC[string, int16]{
 			src:           "0",
 			expectPresent: true,
 			expectValue:   0,
 		},
-		"on empty int16 Optional with negative non-zero int string source": optionalScanTC[string, int16]{
+		"on empty int16 Optional given negative non-zero int string source": optionalScanTC[string, int16]{
 			src:           "-123",
 			expectPresent: true,
 			expectValue:   -123,
 		},
-		"on empty int16 Optional with negative non-zero int string source that contains floating points": optionalScanTC[string, int16]{
+		"on empty int16 Optional given negative non-zero int string source that contains floating points": optionalScanTC[string, int16]{
 			src:         "-123.456",
 			expectError: true,
 		},
-		"on empty int16 Optional with negative non-zero int string source that exceeds min int16": optionalScanTC[string, int16]{
+		"on empty int16 Optional given negative non-zero int string source that exceeds min int16": optionalScanTC[string, int16]{
 			src:         minInt64String,
 			expectError: true,
 		},
-		"on empty int16 Optional with positive non-zero int string source": optionalScanTC[string, int16]{
+		"on empty int16 Optional given positive non-zero int string source": optionalScanTC[string, int16]{
 			src:           "123",
 			expectPresent: true,
 			expectValue:   123,
 		},
-		"on empty int16 Optional with positive non-zero int string source that contains floating points": optionalScanTC[string, int16]{
+		"on empty int16 Optional given positive non-zero int string source that contains floating points": optionalScanTC[string, int16]{
 			src:         "123.456",
 			expectError: true,
 		},
-		"on empty int16 Optional with positive non-zero int string source that exceeds max int16": optionalScanTC[string, int16]{
+		"on empty int16 Optional given positive non-zero int string source that exceeds max int16": optionalScanTC[string, int16]{
 			src:         maxInt64String,
 			expectError: true,
 		},
-		"on empty int16 Optional with non-int string source": optionalScanTC[string, int16]{
+		"on empty int16 Optional given non-int string source": optionalScanTC[string, int16]{
 			src:         "abc",
 			expectError: true,
 		},
-		"on empty *int16 Optional with zero string source": optionalScanTC[string, *int16]{
+		"on empty *int16 Optional given zero string source": optionalScanTC[string, *int16]{
 			src:         "",
 			expectError: true,
 		},
-		"on empty *int16 Optional with zero int string source": optionalScanTC[string, *int16]{
+		"on empty *int16 Optional given zero int string source": optionalScanTC[string, *int16]{
 			src:           "0",
 			expectPresent: true,
 			expectValue:   ptrs.ZeroInt16(),
 		},
-		"on empty *int16 Optional with negative int string source": optionalScanTC[string, *int16]{
+		"on empty *int16 Optional given negative int string source": optionalScanTC[string, *int16]{
 			src:           "-123",
 			expectPresent: true,
 			expectValue:   ptrs.Int16(-123),
 		},
-		"on empty *int16 Optional with positive int string source": optionalScanTC[string, *int16]{
+		"on empty *int16 Optional given positive int string source": optionalScanTC[string, *int16]{
 			src:           "123",
 			expectPresent: true,
 			expectValue:   ptrs.Int16(123),
 		},
-		"on empty *int16 Optional with non-int string source": optionalScanTC[string, *int16]{
+		"on empty *int16 Optional given non-int string source": optionalScanTC[string, *int16]{
 			src:         "abc",
 			expectError: true,
 		},
-		"on empty Int16 Optional with int string source": optionalScanTC[string, Int16]{
+		"on empty Int16 Optional given int string source": optionalScanTC[string, Int16]{
 			src:           "123",
 			expectPresent: true,
 			expectValue:   123,
 		},
-		"on empty *Int16 Optional with int string source": optionalScanTC[string, *Int16]{
+		"on empty *Int16 Optional given int string source": optionalScanTC[string, *Int16]{
 			src:           "123",
 			expectPresent: true,
 			expectValue:   ptrs.Value[Int16](123),
 		},
-		"on empty int32 Optional with zero string source": optionalScanTC[string, int32]{
+		"on empty int32 Optional given zero string source": optionalScanTC[string, int32]{
 			src:         "",
 			expectError: true,
 		},
-		"on empty int32 Optional with zero int string source": optionalScanTC[string, int32]{
+		"on empty int32 Optional given zero int string source": optionalScanTC[string, int32]{
 			src:           "0",
 			expectPresent: true,
 			expectValue:   0,
 		},
-		"on empty int32 Optional with negative non-zero int string source": optionalScanTC[string, int32]{
+		"on empty int32 Optional given negative non-zero int string source": optionalScanTC[string, int32]{
 			src:           "-123",
 			expectPresent: true,
 			expectValue:   -123,
 		},
-		"on empty int32 Optional with negative non-zero int string source that contains floating points": optionalScanTC[string, int32]{
+		"on empty int32 Optional given negative non-zero int string source that contains floating points": optionalScanTC[string, int32]{
 			src:         "-123.456",
 			expectError: true,
 		},
-		"on empty int32 Optional with negative non-zero int string source that exceeds min int32": optionalScanTC[string, int32]{
+		"on empty int32 Optional given negative non-zero int string source that exceeds min int32": optionalScanTC[string, int32]{
 			src:         minInt64String,
 			expectError: true,
 		},
-		"on empty int32 Optional with positive non-zero int string source": optionalScanTC[string, int32]{
+		"on empty int32 Optional given positive non-zero int string source": optionalScanTC[string, int32]{
 			src:           "123",
 			expectPresent: true,
 			expectValue:   123,
 		},
-		"on empty int32 Optional with positive non-zero int string source that contains floating points": optionalScanTC[string, int32]{
+		"on empty int32 Optional given positive non-zero int string source that contains floating points": optionalScanTC[string, int32]{
 			src:         "123.456",
 			expectError: true,
 		},
-		"on empty int32 Optional with positive non-zero int string source that exceeds max int32": optionalScanTC[string, int32]{
+		"on empty int32 Optional given positive non-zero int string source that exceeds max int32": optionalScanTC[string, int32]{
 			src:         maxInt64String,
 			expectError: true,
 		},
-		"on empty int32 Optional with non-int string source": optionalScanTC[string, int32]{
+		"on empty int32 Optional given non-int string source": optionalScanTC[string, int32]{
 			src:         "abc",
 			expectError: true,
 		},
-		"on empty *int32 Optional with zero string source": optionalScanTC[string, *int32]{
+		"on empty *int32 Optional given zero string source": optionalScanTC[string, *int32]{
 			src:         "",
 			expectError: true,
 		},
-		"on empty *int32 Optional with zero int string source": optionalScanTC[string, *int32]{
+		"on empty *int32 Optional given zero int string source": optionalScanTC[string, *int32]{
 			src:           "0",
 			expectPresent: true,
 			expectValue:   ptrs.ZeroInt32(),
 		},
-		"on empty *int32 Optional with negative int string source": optionalScanTC[string, *int32]{
+		"on empty *int32 Optional given negative int string source": optionalScanTC[string, *int32]{
 			src:           "-123",
 			expectPresent: true,
 			expectValue:   ptrs.Int32(-123),
 		},
-		"on empty *int32 Optional with positive int string source": optionalScanTC[string, *int32]{
+		"on empty *int32 Optional given positive int string source": optionalScanTC[string, *int32]{
 			src:           "123",
 			expectPresent: true,
 			expectValue:   ptrs.Int32(123),
 		},
-		"on empty *int32 Optional with non-int string source": optionalScanTC[string, *int32]{
+		"on empty *int32 Optional given non-int string source": optionalScanTC[string, *int32]{
 			src:         "abc",
 			expectError: true,
 		},
-		"on empty Int32 Optional with int string source": optionalScanTC[string, Int32]{
+		"on empty Int32 Optional given int string source": optionalScanTC[string, Int32]{
 			src:           "123",
 			expectPresent: true,
 			expectValue:   123,
 		},
-		"on empty *Int32 Optional with int string source": optionalScanTC[string, *Int32]{
+		"on empty *Int32 Optional given int string source": optionalScanTC[string, *Int32]{
 			src:           "123",
 			expectPresent: true,
 			expectValue:   ptrs.Value[Int32](123),
 		},
-		"on empty int64 Optional with zero string source": optionalScanTC[string, int64]{
+		"on empty int64 Optional given zero string source": optionalScanTC[string, int64]{
 			src:         "",
 			expectError: true,
 		},
-		"on empty int64 Optional with zero int string source": optionalScanTC[string, int64]{
+		"on empty int64 Optional given zero int string source": optionalScanTC[string, int64]{
 			src:           "0",
 			expectPresent: true,
 			expectValue:   0,
 		},
-		"on empty int64 Optional with negative non-zero int string source": optionalScanTC[string, int64]{
+		"on empty int64 Optional given negative non-zero int string source": optionalScanTC[string, int64]{
 			src:           "-123",
 			expectPresent: true,
 			expectValue:   -123,
 		},
-		"on empty int64 Optional with negative non-zero int string source that contains floating points": optionalScanTC[string, int64]{
+		"on empty int64 Optional given negative non-zero int string source that contains floating points": optionalScanTC[string, int64]{
 			src:         "-123.456",
 			expectError: true,
 		},
-		"on empty int64 Optional with negative non-zero int string source that exceeds min int64": optionalScanTC[string, int64]{
+		"on empty int64 Optional given negative non-zero int string source that exceeds min int64": optionalScanTC[string, int64]{
 			src:         minInt64String + "0",
 			expectError: true,
 		},
-		"on empty int64 Optional with positive non-zero int string source": optionalScanTC[string, int64]{
+		"on empty int64 Optional given positive non-zero int string source": optionalScanTC[string, int64]{
 			src:           "123",
 			expectPresent: true,
 			expectValue:   123,
 		},
-		"on empty int64 Optional with positive non-zero int string source that contains floating points": optionalScanTC[string, int64]{
+		"on empty int64 Optional given positive non-zero int string source that contains floating points": optionalScanTC[string, int64]{
 			src:         "123.456",
 			expectError: true,
 		},
-		"on empty int64 Optional with positive non-zero int string source that exceeds max int64": optionalScanTC[string, int64]{
+		"on empty int64 Optional given positive non-zero int string source that exceeds max int64": optionalScanTC[string, int64]{
 			src:         maxInt64String + "0",
 			expectError: true,
 		},
-		"on empty int64 Optional with non-int string source": optionalScanTC[string, int64]{
+		"on empty int64 Optional given non-int string source": optionalScanTC[string, int64]{
 			src:         "abc",
 			expectError: true,
 		},
-		"on empty *int64 Optional with zero string source": optionalScanTC[string, *int64]{
+		"on empty *int64 Optional given zero string source": optionalScanTC[string, *int64]{
 			src:         "",
 			expectError: true,
 		},
-		"on empty *int64 Optional with zero int string source": optionalScanTC[string, *int64]{
+		"on empty *int64 Optional given zero int string source": optionalScanTC[string, *int64]{
 			src:           "0",
 			expectPresent: true,
 			expectValue:   ptrs.ZeroInt64(),
 		},
-		"on empty *int64 Optional with negative int string source": optionalScanTC[string, *int64]{
+		"on empty *int64 Optional given negative int string source": optionalScanTC[string, *int64]{
 			src:           "-123",
 			expectPresent: true,
 			expectValue:   ptrs.Int64(-123),
 		},
-		"on empty *int64 Optional with positive int string source": optionalScanTC[string, *int64]{
+		"on empty *int64 Optional given positive int string source": optionalScanTC[string, *int64]{
 			src:           "123",
 			expectPresent: true,
 			expectValue:   ptrs.Int64(123),
 		},
-		"on empty *int64 Optional with non-int string source": optionalScanTC[string, *int64]{
+		"on empty *int64 Optional given non-int string source": optionalScanTC[string, *int64]{
 			src:         "abc",
 			expectError: true,
 		},
-		"on empty Int64 Optional with int string source": optionalScanTC[string, Int64]{
+		"on empty Int64 Optional given int string source": optionalScanTC[string, Int64]{
 			src:           "123",
 			expectPresent: true,
 			expectValue:   123,
 		},
-		"on empty *Int64 Optional with int string source": optionalScanTC[string, *Int64]{
+		"on empty *Int64 Optional given int string source": optionalScanTC[string, *Int64]{
 			src:           "123",
 			expectPresent: true,
 			expectValue:   ptrs.Value[Int64](123),
 		},
-		"on empty uint Optional with zero string source": optionalScanTC[string, uint]{
+		"on empty uint Optional given zero string source": optionalScanTC[string, uint]{
 			src:         "",
 			expectError: true,
 		},
-		"on empty uint Optional with zero int string source": optionalScanTC[string, uint]{
+		"on empty uint Optional given zero int string source": optionalScanTC[string, uint]{
 			src:           "0",
 			expectPresent: true,
 			expectValue:   0,
 		},
-		"on empty uint Optional with negative non-zero int string source": optionalScanTC[string, uint]{
+		"on empty uint Optional given negative non-zero int string source": optionalScanTC[string, uint]{
 			src:         "-123",
 			expectError: true,
 		},
-		"on empty uint Optional with positive non-zero int string source": optionalScanTC[string, uint]{
+		"on empty uint Optional given positive non-zero int string source": optionalScanTC[string, uint]{
 			src:           "123",
 			expectPresent: true,
 			expectValue:   123,
 		},
-		"on empty uint Optional with positive non-zero int string source that contains floating points": optionalScanTC[string, uint]{
+		"on empty uint Optional given positive non-zero int string source that contains floating points": optionalScanTC[string, uint]{
 			src:         "123.456",
 			expectError: true,
 		},
-		"on empty uint Optional with positive non-zero int string source that exceeds max uint": optionalScanTC[string, uint]{
+		"on empty uint Optional given positive non-zero int string source that exceeds max uint": optionalScanTC[string, uint]{
 			src:         maxUint64String + "0",
 			expectError: true,
 		},
-		"on empty uint Optional with non-int string source": optionalScanTC[string, uint]{
+		"on empty uint Optional given non-int string source": optionalScanTC[string, uint]{
 			src:         "abc",
 			expectError: true,
 		},
-		"on empty *uint Optional with zero string source": optionalScanTC[string, *uint]{
+		"on empty *uint Optional given zero string source": optionalScanTC[string, *uint]{
 			src:         "",
 			expectError: true,
 		},
-		"on empty *uint Optional with zero int string source": optionalScanTC[string, *uint]{
+		"on empty *uint Optional given zero int string source": optionalScanTC[string, *uint]{
 			src:           "0",
 			expectPresent: true,
 			expectValue:   ptrs.ZeroUint(),
 		},
-		"on empty *uint Optional with non-zero int string source": optionalScanTC[string, *uint]{
+		"on empty *uint Optional given non-zero int string source": optionalScanTC[string, *uint]{
 			src:           "123",
 			expectPresent: true,
 			expectValue:   ptrs.Uint(123),
 		},
-		"on empty *uint Optional with non-int string source": optionalScanTC[string, *uint]{
+		"on empty *uint Optional given non-int string source": optionalScanTC[string, *uint]{
 			src:         "abc",
 			expectError: true,
 		},
-		"on empty Uint Optional with int string source": optionalScanTC[string, Uint]{
+		"on empty Uint Optional given int string source": optionalScanTC[string, Uint]{
 			src:           "123",
 			expectPresent: true,
 			expectValue:   123,
 		},
-		"on empty *Uint Optional with int string source": optionalScanTC[string, *Uint]{
+		"on empty *Uint Optional given int string source": optionalScanTC[string, *Uint]{
 			src:           "123",
 			expectPresent: true,
 			expectValue:   ptrs.Value[Uint](123),
 		},
-		"on empty uint8 Optional with zero string source": optionalScanTC[string, uint8]{
+		"on empty uint8 Optional given zero string source": optionalScanTC[string, uint8]{
 			src:         "",
 			expectError: true,
 		},
-		"on empty uint8 Optional with zero int string source": optionalScanTC[string, uint8]{
+		"on empty uint8 Optional given zero int string source": optionalScanTC[string, uint8]{
 			src:           "0",
 			expectPresent: true,
 			expectValue:   0,
 		},
-		"on empty uint8 Optional with negative non-zero int string source": optionalScanTC[string, uint8]{
+		"on empty uint8 Optional given negative non-zero int string source": optionalScanTC[string, uint8]{
 			src:         "-123",
 			expectError: true,
 		},
-		"on empty uint8 Optional with positive non-zero int string source": optionalScanTC[string, uint8]{
+		"on empty uint8 Optional given positive non-zero int string source": optionalScanTC[string, uint8]{
 			src:           "123",
 			expectPresent: true,
 			expectValue:   123,
 		},
-		"on empty uint8 Optional with positive non-zero int string source that contains floating points": optionalScanTC[string, uint8]{
+		"on empty uint8 Optional given positive non-zero int string source that contains floating points": optionalScanTC[string, uint8]{
 			src:         "123.456",
 			expectError: true,
 		},
-		"on empty uint8 Optional with positive non-zero int string source that exceeds max uint8": optionalScanTC[string, uint8]{
+		"on empty uint8 Optional given positive non-zero int string source that exceeds max uint8": optionalScanTC[string, uint8]{
 			src:         maxUint64String,
 			expectError: true,
 		},
-		"on empty uint8 Optional with non-int string source": optionalScanTC[string, uint8]{
+		"on empty uint8 Optional given non-int string source": optionalScanTC[string, uint8]{
 			src:         "abc",
 			expectError: true,
 		},
-		"on empty *uint8 Optional with zero string source": optionalScanTC[string, *uint8]{
+		"on empty *uint8 Optional given zero string source": optionalScanTC[string, *uint8]{
 			src:         "",
 			expectError: true,
 		},
-		"on empty *uint8 Optional with zero int string source": optionalScanTC[string, *uint8]{
+		"on empty *uint8 Optional given zero int string source": optionalScanTC[string, *uint8]{
 			src:           "0",
 			expectPresent: true,
 			expectValue:   ptrs.ZeroUint8(),
 		},
-		"on empty *uint8 Optional with non-zero int string source": optionalScanTC[string, *uint8]{
+		"on empty *uint8 Optional given non-zero int string source": optionalScanTC[string, *uint8]{
 			src:           "123",
 			expectPresent: true,
 			expectValue:   ptrs.Uint8(123),
 		},
-		"on empty *uint8 Optional with non-int string source": optionalScanTC[string, *uint8]{
+		"on empty *uint8 Optional given non-int string source": optionalScanTC[string, *uint8]{
 			src:         "abc",
 			expectError: true,
 		},
-		"on empty Uint8 Optional with int string source": optionalScanTC[string, Uint8]{
+		"on empty Uint8 Optional given int string source": optionalScanTC[string, Uint8]{
 			src:           "123",
 			expectPresent: true,
 			expectValue:   123,
 		},
-		"on empty *Uint8 Optional with int string source": optionalScanTC[string, *Uint8]{
+		"on empty *Uint8 Optional given int string source": optionalScanTC[string, *Uint8]{
 			src:           "123",
 			expectPresent: true,
 			expectValue:   ptrs.Value[Uint8](123),
 		},
-		"on empty uint16 Optional with zero string source": optionalScanTC[string, uint16]{
+		"on empty uint16 Optional given zero string source": optionalScanTC[string, uint16]{
 			src:         "",
 			expectError: true,
 		},
-		"on empty uint16 Optional with zero int string source": optionalScanTC[string, uint16]{
+		"on empty uint16 Optional given zero int string source": optionalScanTC[string, uint16]{
 			src:           "0",
 			expectPresent: true,
 			expectValue:   0,
 		},
-		"on empty uint16 Optional with negative non-zero int string source": optionalScanTC[string, uint16]{
+		"on empty uint16 Optional given negative non-zero int string source": optionalScanTC[string, uint16]{
 			src:         "-123",
 			expectError: true,
 		},
-		"on empty uint16 Optional with positive non-zero int string source": optionalScanTC[string, uint16]{
+		"on empty uint16 Optional given positive non-zero int string source": optionalScanTC[string, uint16]{
 			src:           "123",
 			expectPresent: true,
 			expectValue:   123,
 		},
-		"on empty uint16 Optional with positive non-zero int string source that contains floating points": optionalScanTC[string, uint16]{
+		"on empty uint16 Optional given positive non-zero int string source that contains floating points": optionalScanTC[string, uint16]{
 			src:         "123.456",
 			expectError: true,
 		},
-		"on empty uint16 Optional with positive non-zero int string source that exceeds max uint16": optionalScanTC[string, uint16]{
+		"on empty uint16 Optional given positive non-zero int string source that exceeds max uint16": optionalScanTC[string, uint16]{
 			src:         maxUint64String,
 			expectError: true,
 		},
-		"on empty uint16 Optional with non-int string source": optionalScanTC[string, uint16]{
+		"on empty uint16 Optional given non-int string source": optionalScanTC[string, uint16]{
 			src:         "abc",
 			expectError: true,
 		},
-		"on empty *uint16 Optional with zero string source": optionalScanTC[string, *uint16]{
+		"on empty *uint16 Optional given zero string source": optionalScanTC[string, *uint16]{
 			src:         "",
 			expectError: true,
 		},
-		"on empty *uint16 Optional with zero int string source": optionalScanTC[string, *uint16]{
+		"on empty *uint16 Optional given zero int string source": optionalScanTC[string, *uint16]{
 			src:           "0",
 			expectPresent: true,
 			expectValue:   ptrs.ZeroUint16(),
 		},
-		"on empty *uint16 Optional with non-zero int string source": optionalScanTC[string, *uint16]{
+		"on empty *uint16 Optional given non-zero int string source": optionalScanTC[string, *uint16]{
 			src:           "123",
 			expectPresent: true,
 			expectValue:   ptrs.Uint16(123),
 		},
-		"on empty *uint16 Optional with non-int string source": optionalScanTC[string, *uint16]{
+		"on empty *uint16 Optional given non-int string source": optionalScanTC[string, *uint16]{
 			src:         "abc",
 			expectError: true,
 		},
-		"on empty Uint16 Optional with int string source": optionalScanTC[string, Uint16]{
+		"on empty Uint16 Optional given int string source": optionalScanTC[string, Uint16]{
 			src:           "123",
 			expectPresent: true,
 			expectValue:   123,
 		},
-		"on empty *Uint16 Optional with int string source": optionalScanTC[string, *Uint16]{
+		"on empty *Uint16 Optional given int string source": optionalScanTC[string, *Uint16]{
 			src:           "123",
 			expectPresent: true,
 			expectValue:   ptrs.Value[Uint16](123),
 		},
-		"on empty uint32 Optional with zero string source": optionalScanTC[string, uint32]{
+		"on empty uint32 Optional given zero string source": optionalScanTC[string, uint32]{
 			src:         "",
 			expectError: true,
 		},
-		"on empty uint32 Optional with zero int string source": optionalScanTC[string, uint32]{
+		"on empty uint32 Optional given zero int string source": optionalScanTC[string, uint32]{
 			src:           "0",
 			expectPresent: true,
 			expectValue:   0,
 		},
-		"on empty uint32 Optional with negative non-zero int string source": optionalScanTC[string, uint32]{
+		"on empty uint32 Optional given negative non-zero int string source": optionalScanTC[string, uint32]{
 			src:         "-123",
 			expectError: true,
 		},
-		"on empty uint32 Optional with positive non-zero int string source": optionalScanTC[string, uint32]{
+		"on empty uint32 Optional given positive non-zero int string source": optionalScanTC[string, uint32]{
 			src:           "123",
 			expectPresent: true,
 			expectValue:   123,
 		},
-		"on empty uint32 Optional with positive non-zero int string source that contains floating points": optionalScanTC[string, uint32]{
+		"on empty uint32 Optional given positive non-zero int string source that contains floating points": optionalScanTC[string, uint32]{
 			src:         "123.456",
 			expectError: true,
 		},
-		"on empty uint32 Optional with positive non-zero int string source that exceeds max uint32": optionalScanTC[string, uint32]{
+		"on empty uint32 Optional given positive non-zero int string source that exceeds max uint32": optionalScanTC[string, uint32]{
 			src:         maxUint64String,
 			expectError: true,
 		},
-		"on empty uint32 Optional with non-int string source": optionalScanTC[string, uint32]{
+		"on empty uint32 Optional given non-int string source": optionalScanTC[string, uint32]{
 			src:         "abc",
 			expectError: true,
 		},
-		"on empty *uint32 Optional with zero string source": optionalScanTC[string, *uint32]{
+		"on empty *uint32 Optional given zero string source": optionalScanTC[string, *uint32]{
 			src:         "",
 			expectError: true,
 		},
-		"on empty *uint32 Optional with zero int string source": optionalScanTC[string, *uint32]{
+		"on empty *uint32 Optional given zero int string source": optionalScanTC[string, *uint32]{
 			src:           "0",
 			expectPresent: true,
 			expectValue:   ptrs.ZeroUint32(),
 		},
-		"on empty *uint32 Optional with non-zero int string source": optionalScanTC[string, *uint32]{
+		"on empty *uint32 Optional given non-zero int string source": optionalScanTC[string, *uint32]{
 			src:           "123",
 			expectPresent: true,
 			expectValue:   ptrs.Uint32(123),
 		},
-		"on empty *uint32 Optional with non-int string source": optionalScanTC[string, *uint32]{
+		"on empty *uint32 Optional given non-int string source": optionalScanTC[string, *uint32]{
 			src:         "abc",
 			expectError: true,
 		},
-		"on empty Uint32 Optional with int string source": optionalScanTC[string, Uint32]{
+		"on empty Uint32 Optional given int string source": optionalScanTC[string, Uint32]{
 			src:           "123",
 			expectPresent: true,
 			expectValue:   123,
 		},
-		"on empty *Uint32 Optional with int string source": optionalScanTC[string, *Uint32]{
+		"on empty *Uint32 Optional given int string source": optionalScanTC[string, *Uint32]{
 			src:           "123",
 			expectPresent: true,
 			expectValue:   ptrs.Value[Uint32](123),
 		},
-		"on empty uint64 Optional with zero string source": optionalScanTC[string, uint64]{
+		"on empty uint64 Optional given zero string source": optionalScanTC[string, uint64]{
 			src:         "",
 			expectError: true,
 		},
-		"on empty uint64 Optional with zero int string source": optionalScanTC[string, uint64]{
+		"on empty uint64 Optional given zero int string source": optionalScanTC[string, uint64]{
 			src:           "0",
 			expectPresent: true,
 			expectValue:   0,
 		},
-		"on empty uint64 Optional with negative non-zero int string source": optionalScanTC[string, uint64]{
+		"on empty uint64 Optional given negative non-zero int string source": optionalScanTC[string, uint64]{
 			src:         "-123",
 			expectError: true,
 		},
-		"on empty uint64 Optional with positive non-zero int string source": optionalScanTC[string, uint64]{
+		"on empty uint64 Optional given positive non-zero int string source": optionalScanTC[string, uint64]{
 			src:           "123",
 			expectPresent: true,
 			expectValue:   123,
 		},
-		"on empty uint64 Optional with positive non-zero int string source that contains floating points": optionalScanTC[string, uint64]{
+		"on empty uint64 Optional given positive non-zero int string source that contains floating points": optionalScanTC[string, uint64]{
 			src:         "123.456",
 			expectError: true,
 		},
-		"on empty uint64 Optional with positive non-zero int string source that exceeds max uint": optionalScanTC[string, uint64]{
+		"on empty uint64 Optional given positive non-zero int string source that exceeds max uint": optionalScanTC[string, uint64]{
 			src:         maxUint64String + "0",
 			expectError: true,
 		},
-		"on empty uint64 Optional with non-int string source": optionalScanTC[string, uint64]{
+		"on empty uint64 Optional given non-int string source": optionalScanTC[string, uint64]{
 			src:         "abc",
 			expectError: true,
 		},
-		"on empty *uint64 Optional with zero string source": optionalScanTC[string, *uint64]{
+		"on empty *uint64 Optional given zero string source": optionalScanTC[string, *uint64]{
 			src:         "",
 			expectError: true,
 		},
-		"on empty *uint64 Optional with zero int string source": optionalScanTC[string, *uint64]{
+		"on empty *uint64 Optional given zero int string source": optionalScanTC[string, *uint64]{
 			src:           "0",
 			expectPresent: true,
 			expectValue:   ptrs.ZeroUint64(),
 		},
-		"on empty *uint64 Optional with non-zero int string source": optionalScanTC[string, *uint64]{
+		"on empty *uint64 Optional given non-zero int string source": optionalScanTC[string, *uint64]{
 			src:           "123",
 			expectPresent: true,
 			expectValue:   ptrs.Uint64(123),
 		},
-		"on empty *uint64 Optional with non-int string source": optionalScanTC[string, *uint64]{
+		"on empty *uint64 Optional given non-int string source": optionalScanTC[string, *uint64]{
 			src:         "abc",
 			expectError: true,
 		},
-		"on empty Uint64 Optional with int string source": optionalScanTC[string, Uint64]{
+		"on empty Uint64 Optional given int string source": optionalScanTC[string, Uint64]{
 			src:           "123",
 			expectPresent: true,
 			expectValue:   123,
 		},
-		"on empty *Uint64 Optional with int string source": optionalScanTC[string, *Uint64]{
+		"on empty *Uint64 Optional given int string source": optionalScanTC[string, *Uint64]{
 			src:           "123",
 			expectPresent: true,
 			expectValue:   ptrs.Value[Uint64](123),
 		},
-		"on empty []byte Optional with zero string source": optionalScanTC[string, []byte]{
+		"on empty []byte Optional given zero string source": optionalScanTC[string, []byte]{
 			src:           "",
 			expectPresent: true,
 			expectValue:   []byte(""),
 		},
-		"on empty []byte Optional with non-zero string source": optionalScanTC[string, []byte]{
+		"on empty []byte Optional given non-zero string source": optionalScanTC[string, []byte]{
 			src:           "abc",
 			expectPresent: true,
 			expectValue:   []byte("abc"),
 		},
-		"on empty Bytes Optional with non-zero string source": optionalScanTC[string, Bytes]{
+		"on empty Bytes Optional given non-zero string source": optionalScanTC[string, Bytes]{
 			src:           "abc",
 			expectPresent: true,
 			expectValue:   Bytes("abc"),
 		},
-		"on empty sql.RawBytes Optional with non-zero string source": optionalScanTC[string, sql.RawBytes]{
+		"on empty sql.RawBytes Optional given non-zero string source": optionalScanTC[string, sql.RawBytes]{
 			src:           "abc",
 			expectPresent: true,
 			expectValue:   sql.RawBytes("abc"),
 		},
-		"on empty any Optional with zero string source": optionalScanTC[string, any]{
+		"on empty any Optional given zero string source": optionalScanTC[string, any]{
 			src:           "",
 			expectPresent: true,
 			expectValue:   "",
 		},
-		"on empty any Optional with non-zero string source": optionalScanTC[string, any]{
+		"on empty any Optional given non-zero string source": optionalScanTC[string, any]{
 			src:           "abc",
 			expectPresent: true,
 			expectValue:   "abc",
 		},
-		"on empty Optional of unsupported slice with non-zero string source": optionalScanTC[string, []uintptr]{
+		"on empty Optional of unsupported slice given non-zero string source": optionalScanTC[string, []uintptr]{
 			src:         "abc",
 			expectError: true,
 		},
-		"on empty Optional of unsupported type with non-zero string source": optionalScanTC[string, uintptr]{
+		"on empty Optional of unsupported type given non-zero string source": optionalScanTC[string, uintptr]{
 			src:         "abc",
 			expectError: true,
 		},
-		"on empty sql.NullString Optional with non-zero string source": optionalScanTC[string, sql.NullString]{
+		"on empty sql.NullString Optional given non-zero string source": optionalScanTC[string, sql.NullString]{
 			src:           "abc",
 			expectPresent: true,
 			expectValue:   sql.NullString{String: "abc", Valid: true},
@@ -3299,1055 +3414,1055 @@ func TestOptional_Scan(t *testing.T) {
 		// Supported destination types (incl. pointers and convertible types):
 		// []byte, bool, float32, float64, int, int8, int16, int32, int64, string, uint, uint8, uint16, uint32, uint64,
 		// sql.RawBytes, any
-		"on empty []byte Optional with empty []byte source": optionalScanTC[[]byte, []byte]{
+		"on empty []byte Optional given empty []byte source": optionalScanTC[[]byte, []byte]{
 			src:           []byte{},
 			expectPresent: true,
 			expectValue:   []byte{},
 		},
-		"on empty []byte Optional with non-empty []byte source": optionalScanTC[[]byte, []byte]{
+		"on empty []byte Optional given non-empty []byte source": optionalScanTC[[]byte, []byte]{
 			src:           []byte("abc"),
 			expectPresent: true,
 			expectValue:   []byte("abc"),
 		},
-		"on empty Bytes Optional with empty []byte source": optionalScanTC[[]byte, Bytes]{
+		"on empty Bytes Optional given empty []byte source": optionalScanTC[[]byte, Bytes]{
 			src:           []byte{},
 			expectPresent: true,
 			expectValue:   Bytes{},
 		},
-		"on empty Bytes Optional with non-empty []byte source": optionalScanTC[[]byte, Bytes]{
+		"on empty Bytes Optional given non-empty []byte source": optionalScanTC[[]byte, Bytes]{
 			src:           []byte("abc"),
 			expectPresent: true,
 			expectValue:   Bytes("abc"),
 		},
-		"on empty bool Optional with empty []byte source": optionalScanTC[[]byte, bool]{
+		"on empty bool Optional given empty []byte source": optionalScanTC[[]byte, bool]{
 			src:         []byte{},
 			expectError: true,
 		},
-		"on empty bool Optional with false []byte source": optionalScanTC[[]byte, bool]{
+		"on empty bool Optional given false []byte source": optionalScanTC[[]byte, bool]{
 			src:           []byte("false"),
 			expectPresent: true,
 			expectValue:   false,
 		},
-		"on empty bool Optional with true []byte source": optionalScanTC[[]byte, bool]{
+		"on empty bool Optional given true []byte source": optionalScanTC[[]byte, bool]{
 			src:           []byte("true"),
 			expectPresent: true,
 			expectValue:   true,
 		},
-		"on empty bool Optional with non-boolean []byte source": optionalScanTC[[]byte, bool]{
+		"on empty bool Optional given non-boolean []byte source": optionalScanTC[[]byte, bool]{
 			src:         []byte("abc"),
 			expectError: true,
 		},
-		"on empty *bool Optional with empty []byte source": optionalScanTC[[]byte, *bool]{
+		"on empty *bool Optional given empty []byte source": optionalScanTC[[]byte, *bool]{
 			src:         []byte{},
 			expectError: true,
 		},
-		"on empty *bool Optional with boolean []byte source": optionalScanTC[[]byte, *bool]{
+		"on empty *bool Optional given boolean []byte source": optionalScanTC[[]byte, *bool]{
 			src:           []byte("true"),
 			expectPresent: true,
 			expectValue:   ptrs.True(),
 		},
-		"on empty *bool Optional with non-boolean []byte source": optionalScanTC[[]byte, *bool]{
+		"on empty *bool Optional given non-boolean []byte source": optionalScanTC[[]byte, *bool]{
 			src:         []byte("abc"),
 			expectError: true,
 		},
-		"on empty Bool Optional with boolean []byte source": optionalScanTC[[]byte, Bool]{
+		"on empty Bool Optional given boolean []byte source": optionalScanTC[[]byte, Bool]{
 			src:           []byte("true"),
 			expectPresent: true,
 			expectValue:   true,
 		},
-		"on empty *Bool Optional with boolean []byte source": optionalScanTC[[]byte, *Bool]{
+		"on empty *Bool Optional given boolean []byte source": optionalScanTC[[]byte, *Bool]{
 			src:           []byte("false"),
 			expectPresent: true,
 			expectValue:   ptrs.Value[Bool](false),
 		},
-		"on empty float32 Optional with empty []byte source": optionalScanTC[[]byte, float32]{
+		"on empty float32 Optional given empty []byte source": optionalScanTC[[]byte, float32]{
 			src:         []byte{},
 			expectError: true,
 		},
-		"on empty float32 Optional with zero float []byte source": optionalScanTC[[]byte, float32]{
+		"on empty float32 Optional given zero float []byte source": optionalScanTC[[]byte, float32]{
 			src:           []byte("0"),
 			expectPresent: true,
 			expectValue:   0,
 		},
-		"on empty float32 Optional with negative non-zero float []byte source": optionalScanTC[[]byte, float32]{
+		"on empty float32 Optional given negative non-zero float []byte source": optionalScanTC[[]byte, float32]{
 			src:           []byte("-123.456"),
 			expectPresent: true,
 			expectValue:   -123.456,
 		},
-		"on empty float32 Optional with negative non-zero float []byte source that exceeds min float32": optionalScanTC[[]byte, float32]{
+		"on empty float32 Optional given negative non-zero float []byte source that exceeds min float32": optionalScanTC[[]byte, float32]{
 			src:         []byte(minFloat64String),
 			expectError: true,
 		},
-		"on empty float32 Optional with positive non-zero float []byte source": optionalScanTC[[]byte, float32]{
+		"on empty float32 Optional given positive non-zero float []byte source": optionalScanTC[[]byte, float32]{
 			src:           []byte("123.456"),
 			expectPresent: true,
 			expectValue:   123.456,
 		},
-		"on empty float32 Optional with positive non-zero float []byte source that exceeds max float32": optionalScanTC[[]byte, float32]{
+		"on empty float32 Optional given positive non-zero float []byte source that exceeds max float32": optionalScanTC[[]byte, float32]{
 			src:         []byte(maxFloat64String),
 			expectError: true,
 		},
-		"on empty float32 Optional with non-float []byte source": optionalScanTC[[]byte, float32]{
+		"on empty float32 Optional given non-float []byte source": optionalScanTC[[]byte, float32]{
 			src:         []byte("abc"),
 			expectError: true,
 		},
-		"on empty *float32 Optional with empty []byte source": optionalScanTC[[]byte, *float32]{
+		"on empty *float32 Optional given empty []byte source": optionalScanTC[[]byte, *float32]{
 			src:         []byte{},
 			expectError: true,
 		},
-		"on empty *float32 Optional with zero float []byte source": optionalScanTC[[]byte, *float32]{
+		"on empty *float32 Optional given zero float []byte source": optionalScanTC[[]byte, *float32]{
 			src:           []byte("0"),
 			expectPresent: true,
 			expectValue:   ptrs.ZeroFloat32(),
 		},
-		"on empty *float32 Optional with negative float []byte source": optionalScanTC[[]byte, *float32]{
+		"on empty *float32 Optional given negative float []byte source": optionalScanTC[[]byte, *float32]{
 			src:           []byte("-123.456"),
 			expectPresent: true,
 			expectValue:   ptrs.Float32(-123.456),
 		},
-		"on empty *float32 Optional with positive float []byte source": optionalScanTC[[]byte, *float32]{
+		"on empty *float32 Optional given positive float []byte source": optionalScanTC[[]byte, *float32]{
 			src:           []byte("123.456"),
 			expectPresent: true,
 			expectValue:   ptrs.Float32(123.456),
 		},
-		"on empty *float32 Optional with non-float []byte source": optionalScanTC[[]byte, *float32]{
+		"on empty *float32 Optional given non-float []byte source": optionalScanTC[[]byte, *float32]{
 			src:         []byte("abc"),
 			expectError: true,
 		},
-		"on empty Float32 Optional with float []byte source": optionalScanTC[[]byte, Float32]{
+		"on empty Float32 Optional given float []byte source": optionalScanTC[[]byte, Float32]{
 			src:           []byte("123.456"),
 			expectPresent: true,
 			expectValue:   123.456,
 		},
-		"on empty *Float32 Optional with float []byte source": optionalScanTC[[]byte, *Float32]{
+		"on empty *Float32 Optional given float []byte source": optionalScanTC[[]byte, *Float32]{
 			src:           []byte("123.456"),
 			expectPresent: true,
 			expectValue:   ptrs.Value[Float32](123.456),
 		},
-		"on empty float64 Optional with empty []byte source": optionalScanTC[[]byte, float64]{
+		"on empty float64 Optional given empty []byte source": optionalScanTC[[]byte, float64]{
 			src:         []byte{},
 			expectError: true,
 		},
-		"on empty float64 Optional with zero float []byte source": optionalScanTC[[]byte, float64]{
+		"on empty float64 Optional given zero float []byte source": optionalScanTC[[]byte, float64]{
 			src:           []byte("0"),
 			expectPresent: true,
 			expectValue:   0,
 		},
-		"on empty float64 Optional with negative non-zero float []byte source": optionalScanTC[[]byte, float64]{
+		"on empty float64 Optional given negative non-zero float []byte source": optionalScanTC[[]byte, float64]{
 			src:           []byte("-123.456"),
 			expectPresent: true,
 			expectValue:   -123.456,
 		},
-		"on empty float64 Optional with negative non-zero float []byte source that exceeds min float64": optionalScanTC[[]byte, float64]{
+		"on empty float64 Optional given negative non-zero float []byte source that exceeds min float64": optionalScanTC[[]byte, float64]{
 			src:         []byte(minFloat64String + "0"),
 			expectError: true,
 		},
-		"on empty float64 Optional with positive non-zero float []byte source": optionalScanTC[[]byte, float64]{
+		"on empty float64 Optional given positive non-zero float []byte source": optionalScanTC[[]byte, float64]{
 			src:           []byte("123.456"),
 			expectPresent: true,
 			expectValue:   123.456,
 		},
-		"on empty float64 Optional with positive non-zero float []byte source that exceeds max float64": optionalScanTC[[]byte, float64]{
+		"on empty float64 Optional given positive non-zero float []byte source that exceeds max float64": optionalScanTC[[]byte, float64]{
 			src:         []byte(maxFloat64String + "0"),
 			expectError: true,
 		},
-		"on empty float64 Optional with non-float []byte source": optionalScanTC[[]byte, float64]{
+		"on empty float64 Optional given non-float []byte source": optionalScanTC[[]byte, float64]{
 			src:         []byte("abc"),
 			expectError: true,
 		},
-		"on empty *float64 Optional with empty []byte source": optionalScanTC[[]byte, *float64]{
+		"on empty *float64 Optional given empty []byte source": optionalScanTC[[]byte, *float64]{
 			src:         []byte{},
 			expectError: true,
 		},
-		"on empty *float64 Optional with zero float []byte source": optionalScanTC[[]byte, *float64]{
+		"on empty *float64 Optional given zero float []byte source": optionalScanTC[[]byte, *float64]{
 			src:           []byte("0"),
 			expectPresent: true,
 			expectValue:   ptrs.ZeroFloat64(),
 		},
-		"on empty *float64 Optional with negative float []byte source": optionalScanTC[[]byte, *float64]{
+		"on empty *float64 Optional given negative float []byte source": optionalScanTC[[]byte, *float64]{
 			src:           []byte("-123.456"),
 			expectPresent: true,
 			expectValue:   ptrs.Float64(-123.456),
 		},
-		"on empty *float64 Optional with positive float []byte source": optionalScanTC[[]byte, *float64]{
+		"on empty *float64 Optional given positive float []byte source": optionalScanTC[[]byte, *float64]{
 			src:           []byte("123.456"),
 			expectPresent: true,
 			expectValue:   ptrs.Float64(123.456),
 		},
-		"on empty *float64 Optional with non-float []byte source": optionalScanTC[[]byte, *float64]{
+		"on empty *float64 Optional given non-float []byte source": optionalScanTC[[]byte, *float64]{
 			src:         []byte("abc"),
 			expectError: true,
 		},
-		"on empty Float64 Optional with float []byte source": optionalScanTC[[]byte, Float64]{
+		"on empty Float64 Optional given float []byte source": optionalScanTC[[]byte, Float64]{
 			src:           []byte("123.456"),
 			expectPresent: true,
 			expectValue:   123.456,
 		},
-		"on empty *Float64 Optional with float []byte source": optionalScanTC[[]byte, *Float64]{
+		"on empty *Float64 Optional given float []byte source": optionalScanTC[[]byte, *Float64]{
 			src:           []byte("123.456"),
 			expectPresent: true,
 			expectValue:   ptrs.Value[Float64](123.456),
 		},
-		"on empty int Optional with empty []byte source": optionalScanTC[[]byte, int]{
+		"on empty int Optional given empty []byte source": optionalScanTC[[]byte, int]{
 			src:         []byte{},
 			expectError: true,
 		},
-		"on empty int Optional with zero int []byte source": optionalScanTC[[]byte, int]{
+		"on empty int Optional given zero int []byte source": optionalScanTC[[]byte, int]{
 			src:           []byte("0"),
 			expectPresent: true,
 			expectValue:   0,
 		},
-		"on empty int Optional with negative non-zero int []byte source": optionalScanTC[[]byte, int]{
+		"on empty int Optional given negative non-zero int []byte source": optionalScanTC[[]byte, int]{
 			src:           []byte("-123"),
 			expectPresent: true,
 			expectValue:   -123,
 		},
-		"on empty int Optional with negative non-zero int []byte source that contains floating points": optionalScanTC[[]byte, int]{
+		"on empty int Optional given negative non-zero int []byte source that contains floating points": optionalScanTC[[]byte, int]{
 			src:         []byte("-123.456"),
 			expectError: true,
 		},
-		"on empty int Optional with negative non-zero int []byte source that exceeds min int": optionalScanTC[[]byte, int]{
+		"on empty int Optional given negative non-zero int []byte source that exceeds min int": optionalScanTC[[]byte, int]{
 			src:         []byte(minInt64String + "0"),
 			expectError: true,
 		},
-		"on empty int Optional with positive non-zero int []byte source": optionalScanTC[[]byte, int]{
+		"on empty int Optional given positive non-zero int []byte source": optionalScanTC[[]byte, int]{
 			src:           []byte("123"),
 			expectPresent: true,
 			expectValue:   123,
 		},
-		"on empty int Optional with positive non-zero int []byte source that contains floating points": optionalScanTC[[]byte, int]{
+		"on empty int Optional given positive non-zero int []byte source that contains floating points": optionalScanTC[[]byte, int]{
 			src:         []byte("123.456"),
 			expectError: true,
 		},
-		"on empty int Optional with positive non-zero int []byte source that exceeds max int": optionalScanTC[[]byte, int]{
+		"on empty int Optional given positive non-zero int []byte source that exceeds max int": optionalScanTC[[]byte, int]{
 			src:         []byte(maxInt64String + "0"),
 			expectError: true,
 		},
-		"on empty int Optional with non-int []byte source": optionalScanTC[[]byte, int]{
+		"on empty int Optional given non-int []byte source": optionalScanTC[[]byte, int]{
 			src:         []byte("abc"),
 			expectError: true,
 		},
-		"on empty *int Optional with empty []byte source": optionalScanTC[[]byte, *int]{
+		"on empty *int Optional given empty []byte source": optionalScanTC[[]byte, *int]{
 			src:         []byte{},
 			expectError: true,
 		},
-		"on empty *int Optional with zero int []byte source": optionalScanTC[[]byte, *int]{
+		"on empty *int Optional given zero int []byte source": optionalScanTC[[]byte, *int]{
 			src:           []byte("0"),
 			expectPresent: true,
 			expectValue:   ptrs.ZeroInt(),
 		},
-		"on empty *int Optional with negative int []byte source": optionalScanTC[[]byte, *int]{
+		"on empty *int Optional given negative int []byte source": optionalScanTC[[]byte, *int]{
 			src:           []byte("-123"),
 			expectPresent: true,
 			expectValue:   ptrs.Int(-123),
 		},
-		"on empty *int Optional with positive int []byte source": optionalScanTC[[]byte, *int]{
+		"on empty *int Optional given positive int []byte source": optionalScanTC[[]byte, *int]{
 			src:           []byte("123"),
 			expectPresent: true,
 			expectValue:   ptrs.Int(123),
 		},
-		"on empty *int Optional with non-int []byte source": optionalScanTC[[]byte, *int]{
+		"on empty *int Optional given non-int []byte source": optionalScanTC[[]byte, *int]{
 			src:         []byte("abc"),
 			expectError: true,
 		},
-		"on empty Int Optional with int []byte source": optionalScanTC[[]byte, Int]{
+		"on empty Int Optional given int []byte source": optionalScanTC[[]byte, Int]{
 			src:           []byte("123"),
 			expectPresent: true,
 			expectValue:   123,
 		},
-		"on empty *Int Optional with int []byte source": optionalScanTC[[]byte, *Int]{
+		"on empty *Int Optional given int []byte source": optionalScanTC[[]byte, *Int]{
 			src:           []byte("123"),
 			expectPresent: true,
 			expectValue:   ptrs.Value[Int](123),
 		},
-		"on empty int8 Optional with empty []byte source": optionalScanTC[[]byte, int8]{
+		"on empty int8 Optional given empty []byte source": optionalScanTC[[]byte, int8]{
 			src:         []byte{},
 			expectError: true,
 		},
-		"on empty int8 Optional with zero int []byte source": optionalScanTC[[]byte, int8]{
+		"on empty int8 Optional given zero int []byte source": optionalScanTC[[]byte, int8]{
 			src:           []byte("0"),
 			expectPresent: true,
 			expectValue:   0,
 		},
-		"on empty int8 Optional with negative non-zero int []byte source": optionalScanTC[[]byte, int8]{
+		"on empty int8 Optional given negative non-zero int []byte source": optionalScanTC[[]byte, int8]{
 			src:           []byte("-123"),
 			expectPresent: true,
 			expectValue:   -123,
 		},
-		"on empty int8 Optional with negative non-zero int string []byte that contains floating points": optionalScanTC[[]byte, int8]{
+		"on empty int8 Optional given negative non-zero int string []byte that contains floating points": optionalScanTC[[]byte, int8]{
 			src:         []byte("-123.456"),
 			expectError: true,
 		},
-		"on empty int8 Optional with negative non-zero int string []byte that exceeds min int8": optionalScanTC[[]byte, int8]{
+		"on empty int8 Optional given negative non-zero int string []byte that exceeds min int8": optionalScanTC[[]byte, int8]{
 			src:         []byte(minInt64String),
 			expectError: true,
 		},
-		"on empty int8 Optional with positive non-zero int []byte source": optionalScanTC[[]byte, int8]{
+		"on empty int8 Optional given positive non-zero int []byte source": optionalScanTC[[]byte, int8]{
 			src:           []byte("123"),
 			expectPresent: true,
 			expectValue:   123,
 		},
-		"on empty int8 Optional with positive non-zero int []byte source that contains floating points": optionalScanTC[[]byte, int8]{
+		"on empty int8 Optional given positive non-zero int []byte source that contains floating points": optionalScanTC[[]byte, int8]{
 			src:         []byte("123.456"),
 			expectError: true,
 		},
-		"on empty int8 Optional with positive non-zero int []byte source that exceeds max int8": optionalScanTC[[]byte, int8]{
+		"on empty int8 Optional given positive non-zero int []byte source that exceeds max int8": optionalScanTC[[]byte, int8]{
 			src:         []byte(maxInt64String),
 			expectError: true,
 		},
-		"on empty int8 Optional with non-int []byte source": optionalScanTC[[]byte, int8]{
+		"on empty int8 Optional given non-int []byte source": optionalScanTC[[]byte, int8]{
 			src:         []byte("abc"),
 			expectError: true,
 		},
-		"on empty *int8 Optional with empty []byte source": optionalScanTC[[]byte, *int8]{
+		"on empty *int8 Optional given empty []byte source": optionalScanTC[[]byte, *int8]{
 			src:         []byte{},
 			expectError: true,
 		},
-		"on empty *int8 Optional with zero int []byte source": optionalScanTC[[]byte, *int8]{
+		"on empty *int8 Optional given zero int []byte source": optionalScanTC[[]byte, *int8]{
 			src:           []byte("0"),
 			expectPresent: true,
 			expectValue:   ptrs.ZeroInt8(),
 		},
-		"on empty *int8 Optional with negative int []byte source": optionalScanTC[[]byte, *int8]{
+		"on empty *int8 Optional given negative int []byte source": optionalScanTC[[]byte, *int8]{
 			src:           []byte("-123"),
 			expectPresent: true,
 			expectValue:   ptrs.Int8(-123),
 		},
-		"on empty *int8 Optional with positive int []byte source": optionalScanTC[[]byte, *int8]{
+		"on empty *int8 Optional given positive int []byte source": optionalScanTC[[]byte, *int8]{
 			src:           []byte("123"),
 			expectPresent: true,
 			expectValue:   ptrs.Int8(123),
 		},
-		"on empty *int8 Optional with non-int []byte source": optionalScanTC[[]byte, *int8]{
+		"on empty *int8 Optional given non-int []byte source": optionalScanTC[[]byte, *int8]{
 			src:         []byte("abc"),
 			expectError: true,
 		},
-		"on empty Int8 Optional with int []byte source": optionalScanTC[[]byte, Int8]{
+		"on empty Int8 Optional given int []byte source": optionalScanTC[[]byte, Int8]{
 			src:           []byte("123"),
 			expectPresent: true,
 			expectValue:   123,
 		},
-		"on empty *Int8 Optional with int []byte source": optionalScanTC[[]byte, *Int8]{
+		"on empty *Int8 Optional given int []byte source": optionalScanTC[[]byte, *Int8]{
 			src:           []byte("123"),
 			expectPresent: true,
 			expectValue:   ptrs.Value[Int8](123),
 		},
-		"on empty int16 Optional with empty []byte source": optionalScanTC[[]byte, int16]{
+		"on empty int16 Optional given empty []byte source": optionalScanTC[[]byte, int16]{
 			src:         []byte{},
 			expectError: true,
 		},
-		"on empty int16 Optional with zero int []byte source": optionalScanTC[[]byte, int16]{
+		"on empty int16 Optional given zero int []byte source": optionalScanTC[[]byte, int16]{
 			src:           []byte("0"),
 			expectPresent: true,
 			expectValue:   0,
 		},
-		"on empty int16 Optional with negative non-zero int []byte source": optionalScanTC[[]byte, int16]{
+		"on empty int16 Optional given negative non-zero int []byte source": optionalScanTC[[]byte, int16]{
 			src:           []byte("-123"),
 			expectPresent: true,
 			expectValue:   -123,
 		},
-		"on empty int16 Optional with negative non-zero int []byte source that contains floating points": optionalScanTC[[]byte, int16]{
+		"on empty int16 Optional given negative non-zero int []byte source that contains floating points": optionalScanTC[[]byte, int16]{
 			src:         []byte("-123.456"),
 			expectError: true,
 		},
-		"on empty int16 Optional with negative non-zero int []byte source that exceeds min int16": optionalScanTC[[]byte, int16]{
+		"on empty int16 Optional given negative non-zero int []byte source that exceeds min int16": optionalScanTC[[]byte, int16]{
 			src:         []byte(minInt64String),
 			expectError: true,
 		},
-		"on empty int16 Optional with positive non-zero int []byte source": optionalScanTC[[]byte, int16]{
+		"on empty int16 Optional given positive non-zero int []byte source": optionalScanTC[[]byte, int16]{
 			src:           []byte("123"),
 			expectPresent: true,
 			expectValue:   123,
 		},
-		"on empty int16 Optional with positive non-zero int []byte source that contains floating points": optionalScanTC[[]byte, int16]{
+		"on empty int16 Optional given positive non-zero int []byte source that contains floating points": optionalScanTC[[]byte, int16]{
 			src:         []byte("123.456"),
 			expectError: true,
 		},
-		"on empty int16 Optional with positive non-zero int []byte source that exceeds max int16": optionalScanTC[[]byte, int16]{
+		"on empty int16 Optional given positive non-zero int []byte source that exceeds max int16": optionalScanTC[[]byte, int16]{
 			src:         []byte(maxInt64String),
 			expectError: true,
 		},
-		"on empty int16 Optional with non-int []byte source": optionalScanTC[[]byte, int16]{
+		"on empty int16 Optional given non-int []byte source": optionalScanTC[[]byte, int16]{
 			src:         []byte("abc"),
 			expectError: true,
 		},
-		"on empty *int16 Optional with empty []byte source": optionalScanTC[[]byte, *int16]{
+		"on empty *int16 Optional given empty []byte source": optionalScanTC[[]byte, *int16]{
 			src:         []byte{},
 			expectError: true,
 		},
-		"on empty *int16 Optional with zero int []byte source": optionalScanTC[[]byte, *int16]{
+		"on empty *int16 Optional given zero int []byte source": optionalScanTC[[]byte, *int16]{
 			src:           []byte("0"),
 			expectPresent: true,
 			expectValue:   ptrs.ZeroInt16(),
 		},
-		"on empty *int16 Optional with negative int []byte source": optionalScanTC[[]byte, *int16]{
+		"on empty *int16 Optional given negative int []byte source": optionalScanTC[[]byte, *int16]{
 			src:           []byte("-123"),
 			expectPresent: true,
 			expectValue:   ptrs.Int16(-123),
 		},
-		"on empty *int16 Optional with positive int []byte source": optionalScanTC[[]byte, *int16]{
+		"on empty *int16 Optional given positive int []byte source": optionalScanTC[[]byte, *int16]{
 			src:           []byte("123"),
 			expectPresent: true,
 			expectValue:   ptrs.Int16(123),
 		},
-		"on empty *int16 Optional with non-int []byte source": optionalScanTC[[]byte, *int16]{
+		"on empty *int16 Optional given non-int []byte source": optionalScanTC[[]byte, *int16]{
 			src:         []byte("abc"),
 			expectError: true,
 		},
-		"on empty Int16 Optional with int []byte source": optionalScanTC[[]byte, Int16]{
+		"on empty Int16 Optional given int []byte source": optionalScanTC[[]byte, Int16]{
 			src:           []byte("123"),
 			expectPresent: true,
 			expectValue:   123,
 		},
-		"on empty *Int16 Optional with int []byte source": optionalScanTC[[]byte, *Int16]{
+		"on empty *Int16 Optional given int []byte source": optionalScanTC[[]byte, *Int16]{
 			src:           []byte("123"),
 			expectPresent: true,
 			expectValue:   ptrs.Value[Int16](123),
 		},
-		"on empty int32 Optional with empty []byte source": optionalScanTC[[]byte, int32]{
+		"on empty int32 Optional given empty []byte source": optionalScanTC[[]byte, int32]{
 			src:         []byte{},
 			expectError: true,
 		},
-		"on empty int32 Optional with zero int []byte source": optionalScanTC[[]byte, int32]{
+		"on empty int32 Optional given zero int []byte source": optionalScanTC[[]byte, int32]{
 			src:           []byte("0"),
 			expectPresent: true,
 			expectValue:   0,
 		},
-		"on empty int32 Optional with negative non-zero int []byte source": optionalScanTC[[]byte, int32]{
+		"on empty int32 Optional given negative non-zero int []byte source": optionalScanTC[[]byte, int32]{
 			src:           []byte("-123"),
 			expectPresent: true,
 			expectValue:   -123,
 		},
-		"on empty int32 Optional with negative non-zero int []byte source that contains floating points": optionalScanTC[[]byte, int32]{
+		"on empty int32 Optional given negative non-zero int []byte source that contains floating points": optionalScanTC[[]byte, int32]{
 			src:         []byte("-123.456"),
 			expectError: true,
 		},
-		"on empty int32 Optional with negative non-zero int []byte source that exceeds min int32": optionalScanTC[[]byte, int32]{
+		"on empty int32 Optional given negative non-zero int []byte source that exceeds min int32": optionalScanTC[[]byte, int32]{
 			src:         []byte(minInt64String),
 			expectError: true,
 		},
-		"on empty int32 Optional with positive non-zero int []byte source": optionalScanTC[[]byte, int32]{
+		"on empty int32 Optional given positive non-zero int []byte source": optionalScanTC[[]byte, int32]{
 			src:           []byte("123"),
 			expectPresent: true,
 			expectValue:   123,
 		},
-		"on empty int32 Optional with positive non-zero int []byte source that contains floating points": optionalScanTC[[]byte, int32]{
+		"on empty int32 Optional given positive non-zero int []byte source that contains floating points": optionalScanTC[[]byte, int32]{
 			src:         []byte("123.456"),
 			expectError: true,
 		},
-		"on empty int32 Optional with positive non-zero int []byte source that exceeds max int32": optionalScanTC[[]byte, int32]{
+		"on empty int32 Optional given positive non-zero int []byte source that exceeds max int32": optionalScanTC[[]byte, int32]{
 			src:         []byte(maxInt64String),
 			expectError: true,
 		},
-		"on empty int32 Optional with non-int []byte source": optionalScanTC[[]byte, int32]{
+		"on empty int32 Optional given non-int []byte source": optionalScanTC[[]byte, int32]{
 			src:         []byte("abc"),
 			expectError: true,
 		},
-		"on empty *int32 Optional with empty []byte source": optionalScanTC[[]byte, *int32]{
+		"on empty *int32 Optional given empty []byte source": optionalScanTC[[]byte, *int32]{
 			src:         []byte{},
 			expectError: true,
 		},
-		"on empty *int32 Optional with []byte int string source": optionalScanTC[[]byte, *int32]{
+		"on empty *int32 Optional given []byte int string source": optionalScanTC[[]byte, *int32]{
 			src:           []byte("0"),
 			expectPresent: true,
 			expectValue:   ptrs.ZeroInt32(),
 		},
-		"on empty *int32 Optional with negative int []byte source": optionalScanTC[[]byte, *int32]{
+		"on empty *int32 Optional given negative int []byte source": optionalScanTC[[]byte, *int32]{
 			src:           []byte("-123"),
 			expectPresent: true,
 			expectValue:   ptrs.Int32(-123),
 		},
-		"on empty *int32 Optional with positive int []byte source": optionalScanTC[[]byte, *int32]{
+		"on empty *int32 Optional given positive int []byte source": optionalScanTC[[]byte, *int32]{
 			src:           []byte("123"),
 			expectPresent: true,
 			expectValue:   ptrs.Int32(123),
 		},
-		"on empty *int32 Optional with non-int []byte source": optionalScanTC[[]byte, *int32]{
+		"on empty *int32 Optional given non-int []byte source": optionalScanTC[[]byte, *int32]{
 			src:         []byte("abc"),
 			expectError: true,
 		},
-		"on empty Int32 Optional with int []byte source": optionalScanTC[[]byte, Int32]{
+		"on empty Int32 Optional given int []byte source": optionalScanTC[[]byte, Int32]{
 			src:           []byte("123"),
 			expectPresent: true,
 			expectValue:   123,
 		},
-		"on empty *Int32 Optional with int []byte source": optionalScanTC[[]byte, *Int32]{
+		"on empty *Int32 Optional given int []byte source": optionalScanTC[[]byte, *Int32]{
 			src:           []byte("123"),
 			expectPresent: true,
 			expectValue:   ptrs.Value[Int32](123),
 		},
-		"on empty int64 Optional with empty []byte source": optionalScanTC[[]byte, int64]{
+		"on empty int64 Optional given empty []byte source": optionalScanTC[[]byte, int64]{
 			src:         []byte{},
 			expectError: true,
 		},
-		"on empty int64 Optional with zero int []byte source": optionalScanTC[[]byte, int64]{
+		"on empty int64 Optional given zero int []byte source": optionalScanTC[[]byte, int64]{
 			src:           []byte("0"),
 			expectPresent: true,
 			expectValue:   0,
 		},
-		"on empty int64 Optional with negative non-zero int []byte source": optionalScanTC[[]byte, int64]{
+		"on empty int64 Optional given negative non-zero int []byte source": optionalScanTC[[]byte, int64]{
 			src:           []byte("-123"),
 			expectPresent: true,
 			expectValue:   -123,
 		},
-		"on empty int64 Optional with negative non-zero int []byte source that contains floating points": optionalScanTC[[]byte, int64]{
+		"on empty int64 Optional given negative non-zero int []byte source that contains floating points": optionalScanTC[[]byte, int64]{
 			src:         []byte("-123.456"),
 			expectError: true,
 		},
-		"on empty int64 Optional with negative non-zero int []byte source that exceeds min int64": optionalScanTC[[]byte, int64]{
+		"on empty int64 Optional given negative non-zero int []byte source that exceeds min int64": optionalScanTC[[]byte, int64]{
 			src:         []byte(minInt64String + "0"),
 			expectError: true,
 		},
-		"on empty int64 Optional with positive non-zero int []byte source": optionalScanTC[[]byte, int64]{
+		"on empty int64 Optional given positive non-zero int []byte source": optionalScanTC[[]byte, int64]{
 			src:           []byte("123"),
 			expectPresent: true,
 			expectValue:   123,
 		},
-		"on empty int64 Optional with positive non-zero int []byte source that contains floating points": optionalScanTC[[]byte, int64]{
+		"on empty int64 Optional given positive non-zero int []byte source that contains floating points": optionalScanTC[[]byte, int64]{
 			src:         []byte("123.456"),
 			expectError: true,
 		},
-		"on empty int64 Optional with positive non-zero int []byte source that exceeds max int64": optionalScanTC[[]byte, int64]{
+		"on empty int64 Optional given positive non-zero int []byte source that exceeds max int64": optionalScanTC[[]byte, int64]{
 			src:         []byte(maxInt64String + "0"),
 			expectError: true,
 		},
-		"on empty int64 Optional with non-int []byte source": optionalScanTC[[]byte, int64]{
+		"on empty int64 Optional given non-int []byte source": optionalScanTC[[]byte, int64]{
 			src:         []byte("abc"),
 			expectError: true,
 		},
-		"on empty *int64 Optional with empty []byte source": optionalScanTC[[]byte, *int64]{
+		"on empty *int64 Optional given empty []byte source": optionalScanTC[[]byte, *int64]{
 			src:         []byte{},
 			expectError: true,
 		},
-		"on empty *int64 Optional with zero int []byte source": optionalScanTC[[]byte, *int64]{
+		"on empty *int64 Optional given zero int []byte source": optionalScanTC[[]byte, *int64]{
 			src:           []byte("0"),
 			expectPresent: true,
 			expectValue:   ptrs.ZeroInt64(),
 		},
-		"on empty *int64 Optional with negative int []byte source": optionalScanTC[[]byte, *int64]{
+		"on empty *int64 Optional given negative int []byte source": optionalScanTC[[]byte, *int64]{
 			src:           []byte("-123"),
 			expectPresent: true,
 			expectValue:   ptrs.Int64(-123),
 		},
-		"on empty *int64 Optional with positive int []byte source": optionalScanTC[[]byte, *int64]{
+		"on empty *int64 Optional given positive int []byte source": optionalScanTC[[]byte, *int64]{
 			src:           []byte("123"),
 			expectPresent: true,
 			expectValue:   ptrs.Int64(123),
 		},
-		"on empty *int64 Optional with non-int []byte source": optionalScanTC[[]byte, *int64]{
+		"on empty *int64 Optional given non-int []byte source": optionalScanTC[[]byte, *int64]{
 			src:         []byte("abc"),
 			expectError: true,
 		},
-		"on empty Int64 Optional with int []byte source": optionalScanTC[[]byte, Int64]{
+		"on empty Int64 Optional given int []byte source": optionalScanTC[[]byte, Int64]{
 			src:           []byte("123"),
 			expectPresent: true,
 			expectValue:   123,
 		},
-		"on empty *Int64 Optional with int []byte source": optionalScanTC[[]byte, *Int64]{
+		"on empty *Int64 Optional given int []byte source": optionalScanTC[[]byte, *Int64]{
 			src:           []byte("123"),
 			expectPresent: true,
 			expectValue:   ptrs.Value[Int64](123),
 		},
-		"on empty string Optional with empty []byte source": optionalScanTC[[]byte, string]{
+		"on empty string Optional given empty []byte source": optionalScanTC[[]byte, string]{
 			src:           []byte{},
 			expectPresent: true,
 			expectValue:   "",
 		},
-		"on empty string Optional with non-empty []byte source": optionalScanTC[[]byte, string]{
+		"on empty string Optional given non-empty []byte source": optionalScanTC[[]byte, string]{
 			src:           []byte("abc"),
 			expectPresent: true,
 			expectValue:   "abc",
 		},
-		"on empty *string Optional with empty []byte source": optionalScanTC[[]byte, *string]{
+		"on empty *string Optional given empty []byte source": optionalScanTC[[]byte, *string]{
 			src:           []byte{},
 			expectPresent: true,
 			expectValue:   ptrs.ZeroString(),
 		},
-		"on empty *string Optional with non-empty []byte source": optionalScanTC[[]byte, *string]{
+		"on empty *string Optional given non-empty []byte source": optionalScanTC[[]byte, *string]{
 			src:           []byte("abc"),
 			expectPresent: true,
 			expectValue:   ptrs.String("abc"),
 		},
-		"on empty String Optional with non-empty []byte source": optionalScanTC[[]byte, String]{
+		"on empty String Optional given non-empty []byte source": optionalScanTC[[]byte, String]{
 			src:           []byte("abc"),
 			expectPresent: true,
 			expectValue:   "abc",
 		},
-		"on empty *String Optional with non-empty []byte source": optionalScanTC[[]byte, *String]{
+		"on empty *String Optional given non-empty []byte source": optionalScanTC[[]byte, *String]{
 			src:           []byte("abc"),
 			expectPresent: true,
 			expectValue:   ptrs.Value[String]("abc"),
 		},
-		"on empty uint Optional with empty []byte source": optionalScanTC[[]byte, uint]{
+		"on empty uint Optional given empty []byte source": optionalScanTC[[]byte, uint]{
 			src:         []byte{},
 			expectError: true,
 		},
-		"on empty uint Optional with zero int []byte source": optionalScanTC[[]byte, uint]{
+		"on empty uint Optional given zero int []byte source": optionalScanTC[[]byte, uint]{
 			src:           []byte("0"),
 			expectPresent: true,
 			expectValue:   0,
 		},
-		"on empty uint Optional with negative non-zero int []byte source": optionalScanTC[[]byte, uint]{
+		"on empty uint Optional given negative non-zero int []byte source": optionalScanTC[[]byte, uint]{
 			src:         []byte("-123"),
 			expectError: true,
 		},
-		"on empty uint Optional with positive non-zero int []byte source": optionalScanTC[[]byte, uint]{
+		"on empty uint Optional given positive non-zero int []byte source": optionalScanTC[[]byte, uint]{
 			src:           []byte("123"),
 			expectPresent: true,
 			expectValue:   123,
 		},
-		"on empty uint Optional with positive non-zero int []byte source that contains floating points": optionalScanTC[[]byte, uint]{
+		"on empty uint Optional given positive non-zero int []byte source that contains floating points": optionalScanTC[[]byte, uint]{
 			src:         []byte("123.456"),
 			expectError: true,
 		},
-		"on empty uint Optional with positive non-zero int []byte source that exceeds max uint": optionalScanTC[[]byte, uint]{
+		"on empty uint Optional given positive non-zero int []byte source that exceeds max uint": optionalScanTC[[]byte, uint]{
 			src:         []byte(maxUint64String + "0"),
 			expectError: true,
 		},
-		"on empty uint Optional with non-int []byte source": optionalScanTC[[]byte, uint]{
+		"on empty uint Optional given non-int []byte source": optionalScanTC[[]byte, uint]{
 			src:         []byte("abc"),
 			expectError: true,
 		},
-		"on empty *uint Optional with empty []byte source": optionalScanTC[[]byte, *uint]{
+		"on empty *uint Optional given empty []byte source": optionalScanTC[[]byte, *uint]{
 			src:         []byte{},
 			expectError: true,
 		},
-		"on empty *uint Optional with zero int []byte source": optionalScanTC[[]byte, *uint]{
+		"on empty *uint Optional given zero int []byte source": optionalScanTC[[]byte, *uint]{
 			src:           []byte("0"),
 			expectPresent: true,
 			expectValue:   ptrs.ZeroUint(),
 		},
-		"on empty *uint Optional with non-zero int []byte source": optionalScanTC[[]byte, *uint]{
+		"on empty *uint Optional given non-zero int []byte source": optionalScanTC[[]byte, *uint]{
 			src:           []byte("123"),
 			expectPresent: true,
 			expectValue:   ptrs.Uint(123),
 		},
-		"on empty *uint Optional with non-int []byte source": optionalScanTC[[]byte, *uint]{
+		"on empty *uint Optional given non-int []byte source": optionalScanTC[[]byte, *uint]{
 			src:         []byte("abc"),
 			expectError: true,
 		},
-		"on empty Uint Optional with int []byte source": optionalScanTC[[]byte, Uint]{
+		"on empty Uint Optional given int []byte source": optionalScanTC[[]byte, Uint]{
 			src:           []byte("123"),
 			expectPresent: true,
 			expectValue:   123,
 		},
-		"on empty *Uint Optional with int []byte source": optionalScanTC[[]byte, *Uint]{
+		"on empty *Uint Optional given int []byte source": optionalScanTC[[]byte, *Uint]{
 			src:           []byte("123"),
 			expectPresent: true,
 			expectValue:   ptrs.Value[Uint](123),
 		},
-		"on empty uint8 Optional with empty []byte source": optionalScanTC[[]byte, uint8]{
+		"on empty uint8 Optional given empty []byte source": optionalScanTC[[]byte, uint8]{
 			src:         []byte{},
 			expectError: true,
 		},
-		"on empty uint8 Optional with zero int []byte source": optionalScanTC[[]byte, uint8]{
+		"on empty uint8 Optional given zero int []byte source": optionalScanTC[[]byte, uint8]{
 			src:           []byte("0"),
 			expectPresent: true,
 			expectValue:   0,
 		},
-		"on empty uint8 Optional with negative non-zero int []byte source": optionalScanTC[[]byte, uint8]{
+		"on empty uint8 Optional given negative non-zero int []byte source": optionalScanTC[[]byte, uint8]{
 			src:         []byte("-123"),
 			expectError: true,
 		},
-		"on empty uint8 Optional with positive non-zero int []byte source": optionalScanTC[[]byte, uint8]{
+		"on empty uint8 Optional given positive non-zero int []byte source": optionalScanTC[[]byte, uint8]{
 			src:           []byte("123"),
 			expectPresent: true,
 			expectValue:   123,
 		},
-		"on empty uint8 Optional with positive non-zero int []byte source that contains floating points": optionalScanTC[[]byte, uint8]{
+		"on empty uint8 Optional given positive non-zero int []byte source that contains floating points": optionalScanTC[[]byte, uint8]{
 			src:         []byte("123.456"),
 			expectError: true,
 		},
-		"on empty uint8 Optional with positive non-zero int []byte source that exceeds max uint8": optionalScanTC[[]byte, uint8]{
+		"on empty uint8 Optional given positive non-zero int []byte source that exceeds max uint8": optionalScanTC[[]byte, uint8]{
 			src:         []byte(maxUint64String),
 			expectError: true,
 		},
-		"on empty uint8 Optional with non-int []byte source": optionalScanTC[[]byte, uint8]{
+		"on empty uint8 Optional given non-int []byte source": optionalScanTC[[]byte, uint8]{
 			src:         []byte("abc"),
 			expectError: true,
 		},
-		"on empty *uint8 Optional with empty []byte source": optionalScanTC[[]byte, *uint8]{
+		"on empty *uint8 Optional given empty []byte source": optionalScanTC[[]byte, *uint8]{
 			src:         []byte{},
 			expectError: true,
 		},
-		"on empty *uint8 Optional with zero int []byte source": optionalScanTC[[]byte, *uint8]{
+		"on empty *uint8 Optional given zero int []byte source": optionalScanTC[[]byte, *uint8]{
 			src:           []byte("0"),
 			expectPresent: true,
 			expectValue:   ptrs.ZeroUint8(),
 		},
-		"on empty *uint8 Optional with non-zero int []byte source": optionalScanTC[[]byte, *uint8]{
+		"on empty *uint8 Optional given non-zero int []byte source": optionalScanTC[[]byte, *uint8]{
 			src:           []byte("123"),
 			expectPresent: true,
 			expectValue:   ptrs.Uint8(123),
 		},
-		"on empty *uint8 Optional with non-int []byte source": optionalScanTC[[]byte, *uint8]{
+		"on empty *uint8 Optional given non-int []byte source": optionalScanTC[[]byte, *uint8]{
 			src:         []byte("abc"),
 			expectError: true,
 		},
-		"on empty Uint8 Optional with int []byte source": optionalScanTC[[]byte, Uint8]{
+		"on empty Uint8 Optional given int []byte source": optionalScanTC[[]byte, Uint8]{
 			src:           []byte("123"),
 			expectPresent: true,
 			expectValue:   123,
 		},
-		"on empty *Uint8 Optional with int []byte source": optionalScanTC[[]byte, *Uint8]{
+		"on empty *Uint8 Optional given int []byte source": optionalScanTC[[]byte, *Uint8]{
 			src:           []byte("123"),
 			expectPresent: true,
 			expectValue:   ptrs.Value[Uint8](123),
 		},
-		"on empty uint16 Optional with empty []byte source": optionalScanTC[[]byte, uint16]{
+		"on empty uint16 Optional given empty []byte source": optionalScanTC[[]byte, uint16]{
 			src:         []byte{},
 			expectError: true,
 		},
-		"on empty uint16 Optional with zero int []byte source": optionalScanTC[[]byte, uint16]{
+		"on empty uint16 Optional given zero int []byte source": optionalScanTC[[]byte, uint16]{
 			src:           []byte("0"),
 			expectPresent: true,
 			expectValue:   0,
 		},
-		"on empty uint16 Optional with negative non-zero int []byte source": optionalScanTC[[]byte, uint16]{
+		"on empty uint16 Optional given negative non-zero int []byte source": optionalScanTC[[]byte, uint16]{
 			src:         []byte("-123"),
 			expectError: true,
 		},
-		"on empty uint16 Optional with positive non-zero int []byte source": optionalScanTC[[]byte, uint16]{
+		"on empty uint16 Optional given positive non-zero int []byte source": optionalScanTC[[]byte, uint16]{
 			src:           []byte("123"),
 			expectPresent: true,
 			expectValue:   123,
 		},
-		"on empty uint16 Optional with positive non-zero int []byte source that contains floating points": optionalScanTC[[]byte, uint16]{
+		"on empty uint16 Optional given positive non-zero int []byte source that contains floating points": optionalScanTC[[]byte, uint16]{
 			src:         []byte("123.456"),
 			expectError: true,
 		},
-		"on empty uint16 Optional with positive non-zero int []byte source that exceeds max uint16": optionalScanTC[[]byte, uint16]{
+		"on empty uint16 Optional given positive non-zero int []byte source that exceeds max uint16": optionalScanTC[[]byte, uint16]{
 			src:         []byte(maxUint64String),
 			expectError: true,
 		},
-		"on empty uint16 Optional with non-int []byte source": optionalScanTC[[]byte, uint16]{
+		"on empty uint16 Optional given non-int []byte source": optionalScanTC[[]byte, uint16]{
 			src:         []byte("abc"),
 			expectError: true,
 		},
-		"on empty *uint16 Optional with zero []byte source": optionalScanTC[[]byte, *uint16]{
+		"on empty *uint16 Optional given zero []byte source": optionalScanTC[[]byte, *uint16]{
 			src:         []byte{},
 			expectError: true,
 		},
-		"on empty *uint16 Optional with zero int []byte source": optionalScanTC[[]byte, *uint16]{
+		"on empty *uint16 Optional given zero int []byte source": optionalScanTC[[]byte, *uint16]{
 			src:           []byte("0"),
 			expectPresent: true,
 			expectValue:   ptrs.ZeroUint16(),
 		},
-		"on empty *uint16 Optional with non-zero int []byte source": optionalScanTC[[]byte, *uint16]{
+		"on empty *uint16 Optional given non-zero int []byte source": optionalScanTC[[]byte, *uint16]{
 			src:           []byte("123"),
 			expectPresent: true,
 			expectValue:   ptrs.Uint16(123),
 		},
-		"on empty *uint16 Optional with non-int []byte source": optionalScanTC[[]byte, *uint16]{
+		"on empty *uint16 Optional given non-int []byte source": optionalScanTC[[]byte, *uint16]{
 			src:         []byte("abc"),
 			expectError: true,
 		},
-		"on empty Uint16 Optional with int []byte source": optionalScanTC[[]byte, Uint16]{
+		"on empty Uint16 Optional given int []byte source": optionalScanTC[[]byte, Uint16]{
 			src:           []byte("123"),
 			expectPresent: true,
 			expectValue:   123,
 		},
-		"on empty *Uint16 Optional with int []byte source": optionalScanTC[[]byte, *Uint16]{
+		"on empty *Uint16 Optional given int []byte source": optionalScanTC[[]byte, *Uint16]{
 			src:           []byte("123"),
 			expectPresent: true,
 			expectValue:   ptrs.Value[Uint16](123),
 		},
-		"on empty uint32 Optional with empty []byte source": optionalScanTC[[]byte, uint32]{
+		"on empty uint32 Optional given empty []byte source": optionalScanTC[[]byte, uint32]{
 			src:         []byte{},
 			expectError: true,
 		},
-		"on empty uint32 Optional with zero int []byte source": optionalScanTC[[]byte, uint32]{
+		"on empty uint32 Optional given zero int []byte source": optionalScanTC[[]byte, uint32]{
 			src:           []byte("0"),
 			expectPresent: true,
 			expectValue:   0,
 		},
-		"on empty uint32 Optional with negative non-zero int []byte source": optionalScanTC[[]byte, uint32]{
+		"on empty uint32 Optional given negative non-zero int []byte source": optionalScanTC[[]byte, uint32]{
 			src:         []byte("-123"),
 			expectError: true,
 		},
-		"on empty uint32 Optional with positive non-zero int []byte source": optionalScanTC[[]byte, uint32]{
+		"on empty uint32 Optional given positive non-zero int []byte source": optionalScanTC[[]byte, uint32]{
 			src:           []byte("123"),
 			expectPresent: true,
 			expectValue:   123,
 		},
-		"on empty uint32 Optional with positive non-zero int []byte source that contains floating points": optionalScanTC[[]byte, uint32]{
+		"on empty uint32 Optional given positive non-zero int []byte source that contains floating points": optionalScanTC[[]byte, uint32]{
 			src:         []byte("123.456"),
 			expectError: true,
 		},
-		"on empty uint32 Optional with positive non-zero int []byte source that exceeds max uint32": optionalScanTC[[]byte, uint32]{
+		"on empty uint32 Optional given positive non-zero int []byte source that exceeds max uint32": optionalScanTC[[]byte, uint32]{
 			src:         []byte(maxUint64String),
 			expectError: true,
 		},
-		"on empty uint32 Optional with non-int []byte source": optionalScanTC[[]byte, uint32]{
+		"on empty uint32 Optional given non-int []byte source": optionalScanTC[[]byte, uint32]{
 			src:         []byte("abc"),
 			expectError: true,
 		},
-		"on empty *uint32 Optional with empty []byte source": optionalScanTC[[]byte, *uint32]{
+		"on empty *uint32 Optional given empty []byte source": optionalScanTC[[]byte, *uint32]{
 			src:         []byte{},
 			expectError: true,
 		},
-		"on empty *uint32 Optional with zero int []byte source": optionalScanTC[[]byte, *uint32]{
+		"on empty *uint32 Optional given zero int []byte source": optionalScanTC[[]byte, *uint32]{
 			src:           []byte("0"),
 			expectPresent: true,
 			expectValue:   ptrs.ZeroUint32(),
 		},
-		"on empty *uint32 Optional with non-zero int []byte source": optionalScanTC[[]byte, *uint32]{
+		"on empty *uint32 Optional given non-zero int []byte source": optionalScanTC[[]byte, *uint32]{
 			src:           []byte("123"),
 			expectPresent: true,
 			expectValue:   ptrs.Uint32(123),
 		},
-		"on empty *uint32 Optional with non-int []byte source": optionalScanTC[[]byte, *uint32]{
+		"on empty *uint32 Optional given non-int []byte source": optionalScanTC[[]byte, *uint32]{
 			src:         []byte("abc"),
 			expectError: true,
 		},
-		"on empty Uint32 Optional with int []byte source": optionalScanTC[[]byte, Uint32]{
+		"on empty Uint32 Optional given int []byte source": optionalScanTC[[]byte, Uint32]{
 			src:           []byte("123"),
 			expectPresent: true,
 			expectValue:   123,
 		},
-		"on empty *Uint32 Optional with int []byte source": optionalScanTC[[]byte, *Uint32]{
+		"on empty *Uint32 Optional given int []byte source": optionalScanTC[[]byte, *Uint32]{
 			src:           []byte("123"),
 			expectPresent: true,
 			expectValue:   ptrs.Value[Uint32](123),
 		},
-		"on empty uint64 Optional with empty []byte source": optionalScanTC[[]byte, uint64]{
+		"on empty uint64 Optional given empty []byte source": optionalScanTC[[]byte, uint64]{
 			src:         []byte{},
 			expectError: true,
 		},
-		"on empty uint64 Optional with zero int []byte source": optionalScanTC[[]byte, uint64]{
+		"on empty uint64 Optional given zero int []byte source": optionalScanTC[[]byte, uint64]{
 			src:           []byte("0"),
 			expectPresent: true,
 			expectValue:   0,
 		},
-		"on empty uint64 Optional with negative non-zero int []byte source": optionalScanTC[[]byte, uint64]{
+		"on empty uint64 Optional given negative non-zero int []byte source": optionalScanTC[[]byte, uint64]{
 			src:         []byte("-123"),
 			expectError: true,
 		},
-		"on empty uint64 Optional with positive non-zero int []byte source": optionalScanTC[[]byte, uint64]{
+		"on empty uint64 Optional given positive non-zero int []byte source": optionalScanTC[[]byte, uint64]{
 			src:           []byte("123"),
 			expectPresent: true,
 			expectValue:   123,
 		},
-		"on empty uint64 Optional with positive non-zero int []byte source that contains floating points": optionalScanTC[[]byte, uint64]{
+		"on empty uint64 Optional given positive non-zero int []byte source that contains floating points": optionalScanTC[[]byte, uint64]{
 			src:         []byte("123.456"),
 			expectError: true,
 		},
-		"on empty uint64 Optional with positive non-zero int []byte source that exceeds max uint": optionalScanTC[[]byte, uint64]{
+		"on empty uint64 Optional given positive non-zero int []byte source that exceeds max uint": optionalScanTC[[]byte, uint64]{
 			src:         []byte(maxUint64String + "0"),
 			expectError: true,
 		},
-		"on empty uint64 Optional with non-int []byte source": optionalScanTC[[]byte, uint64]{
+		"on empty uint64 Optional given non-int []byte source": optionalScanTC[[]byte, uint64]{
 			src:         []byte("abc"),
 			expectError: true,
 		},
-		"on empty *uint64 Optional with empty []byte source": optionalScanTC[[]byte, *uint64]{
+		"on empty *uint64 Optional given empty []byte source": optionalScanTC[[]byte, *uint64]{
 			src:         []byte{},
 			expectError: true,
 		},
-		"on empty *uint64 Optional with zero int []byte source": optionalScanTC[[]byte, *uint64]{
+		"on empty *uint64 Optional given zero int []byte source": optionalScanTC[[]byte, *uint64]{
 			src:           []byte("0"),
 			expectPresent: true,
 			expectValue:   ptrs.ZeroUint64(),
 		},
-		"on empty *uint64 Optional with non-zero int []byte source": optionalScanTC[[]byte, *uint64]{
+		"on empty *uint64 Optional given non-zero int []byte source": optionalScanTC[[]byte, *uint64]{
 			src:           []byte("123"),
 			expectPresent: true,
 			expectValue:   ptrs.Uint64(123),
 		},
-		"on empty *uint64 Optional with non-int []byte source": optionalScanTC[[]byte, *uint64]{
+		"on empty *uint64 Optional given non-int []byte source": optionalScanTC[[]byte, *uint64]{
 			src:         []byte("abc"),
 			expectError: true,
 		},
-		"on empty Uint64 Optional with int []byte source": optionalScanTC[[]byte, Uint64]{
+		"on empty Uint64 Optional given int []byte source": optionalScanTC[[]byte, Uint64]{
 			src:           []byte("123"),
 			expectPresent: true,
 			expectValue:   123,
 		},
-		"on empty *Uint64 Optional with int []byte source": optionalScanTC[[]byte, *Uint64]{
+		"on empty *Uint64 Optional given int []byte source": optionalScanTC[[]byte, *Uint64]{
 			src:           []byte("123"),
 			expectPresent: true,
 			expectValue:   ptrs.Value[Uint64](123),
 		},
-		"on empty sql.RawBytes Optional with empty []byte source": optionalScanTC[[]byte, sql.RawBytes]{
+		"on empty sql.RawBytes Optional given empty []byte source": optionalScanTC[[]byte, sql.RawBytes]{
 			src:           []byte{},
 			expectPresent: true,
 			expectValue:   sql.RawBytes{},
 		},
-		"on empty sql.RawBytes Optional with non-empty []byte source": optionalScanTC[[]byte, sql.RawBytes]{
+		"on empty sql.RawBytes Optional given non-empty []byte source": optionalScanTC[[]byte, sql.RawBytes]{
 			src:           []byte("abc"),
 			expectPresent: true,
 			expectValue:   sql.RawBytes("abc"),
 		},
-		"on empty any Optional with empty []byte source": optionalScanTC[[]byte, any]{
+		"on empty any Optional given empty []byte source": optionalScanTC[[]byte, any]{
 			src:           []byte{},
 			expectPresent: true,
 			expectValue:   []byte{},
 		},
-		"on empty any Optional with non-empty []byte source": optionalScanTC[[]byte, any]{
+		"on empty any Optional given non-empty []byte source": optionalScanTC[[]byte, any]{
 			src:           []byte("abc"),
 			expectPresent: true,
 			expectValue:   []byte("abc"),
 		},
-		"on empty Optional of unsupported slice with non-empty []byte source": optionalScanTC[[]byte, []uintptr]{
+		"on empty Optional of unsupported slice given non-empty []byte source": optionalScanTC[[]byte, []uintptr]{
 			src:         []byte("abc"),
 			expectError: true,
 		},
-		"on empty Optional of unsupported type with non-empty []byte source": optionalScanTC[[]byte, uintptr]{
+		"on empty Optional of unsupported type given non-empty []byte source": optionalScanTC[[]byte, uintptr]{
 			src:         []byte("abc"),
 			expectError: true,
 		},
 		// Test cases for time.Time source
 		// Supported destination types (incl. pointers and convertible types):
 		// time.Time, string, []byte, sql.RawBytes, any
-		"on empty time.Time Optional with zero time.Time source": optionalScanTC[time.Time, time.Time]{
+		"on empty time.Time Optional given zero time.Time source": optionalScanTC[time.Time, time.Time]{
 			src:           time.Time{},
 			expectPresent: true,
 			expectValue:   time.Time{},
 		},
-		"on empty time.Time Optional with non-zero time.Time source": optionalScanTC[time.Time, time.Time]{
+		"on empty time.Time Optional given non-zero time.Time source": optionalScanTC[time.Time, time.Time]{
 			src:           timeNow,
 			expectPresent: true,
 			expectValue:   timeNow,
 		},
-		"on empty *time.Time Optional with zero time.Time source": optionalScanTC[time.Time, *time.Time]{
+		"on empty *time.Time Optional given zero time.Time source": optionalScanTC[time.Time, *time.Time]{
 			src:           time.Time{},
 			expectPresent: true,
 			expectValue:   &time.Time{},
 		},
-		"on empty *time.Time Optional with non-zero time.Time source": optionalScanTC[time.Time, *time.Time]{
+		"on empty *time.Time Optional given non-zero time.Time source": optionalScanTC[time.Time, *time.Time]{
 			src:           timeNow,
 			expectPresent: true,
 			expectValue:   ptrs.Value(timeNow),
 		},
-		"on empty Time Optional with non-zero time.Time source": optionalScanTC[time.Time, Time]{
+		"on empty Time Optional given non-zero time.Time source": optionalScanTC[time.Time, Time]{
 			src:           timeNow,
 			expectPresent: true,
 			expectValue:   Time(timeNow),
 		},
-		"on empty *Time Optional with non-zero time.Time source": optionalScanTC[time.Time, *Time]{
+		"on empty *Time Optional given non-zero time.Time source": optionalScanTC[time.Time, *Time]{
 			src:           timeNow,
 			expectPresent: true,
 			expectValue:   ptrs.Value(Time(timeNow)),
 		},
-		"on empty string Optional with zero time.Time source": optionalScanTC[time.Time, string]{
+		"on empty string Optional given zero time.Time source": optionalScanTC[time.Time, string]{
 			src:           time.Time{},
 			expectPresent: true,
 			expectValue:   timeZeroString,
 		},
-		"on empty string Optional with non-zero time.Time source": optionalScanTC[time.Time, string]{
+		"on empty string Optional given non-zero time.Time source": optionalScanTC[time.Time, string]{
 			src:           timeNow,
 			expectPresent: true,
 			expectValue:   timeNowString,
 		},
-		"on empty *string Optional with zero time.Time source": optionalScanTC[time.Time, *string]{
+		"on empty *string Optional given zero time.Time source": optionalScanTC[time.Time, *string]{
 			src:           time.Time{},
 			expectPresent: true,
 			expectValue:   ptrs.String(timeZeroString),
 		},
-		"on empty *string Optional with non-zero time.Time source": optionalScanTC[time.Time, *string]{
+		"on empty *string Optional given non-zero time.Time source": optionalScanTC[time.Time, *string]{
 			src:           timeNow,
 			expectPresent: true,
 			expectValue:   ptrs.String(timeNowString),
 		},
-		"on empty String Optional with non-zero time.Time source": optionalScanTC[time.Time, String]{
+		"on empty String Optional given non-zero time.Time source": optionalScanTC[time.Time, String]{
 			src:           timeNow,
 			expectPresent: true,
 			expectValue:   String(timeNowString),
 		},
-		"on empty *String Optional with non-zero time.Time source": optionalScanTC[time.Time, *String]{
+		"on empty *String Optional given non-zero time.Time source": optionalScanTC[time.Time, *String]{
 			src:           timeNow,
 			expectPresent: true,
 			expectValue:   ptrs.Value(String(timeNowString)),
 		},
-		"on empty []byte Optional with zero time.Time source": optionalScanTC[time.Time, []byte]{
+		"on empty []byte Optional given zero time.Time source": optionalScanTC[time.Time, []byte]{
 			src:           time.Time{},
 			expectPresent: true,
 			expectValue:   []byte(timeZeroString),
 		},
-		"on empty []byte Optional with non-zero time.Time source": optionalScanTC[time.Time, []byte]{
+		"on empty []byte Optional given non-zero time.Time source": optionalScanTC[time.Time, []byte]{
 			src:           timeNow,
 			expectPresent: true,
 			expectValue:   []byte(timeNowString),
 		},
-		"on empty Bytes Optional with non-zero time.Time source": optionalScanTC[time.Time, Bytes]{
+		"on empty Bytes Optional given non-zero time.Time source": optionalScanTC[time.Time, Bytes]{
 			src:           timeNow,
 			expectPresent: true,
 			expectValue:   Bytes(timeNowString),
 		},
-		"on empty sql.RawBytes Optional with non-zero time.Time source": optionalScanTC[time.Time, sql.RawBytes]{
+		"on empty sql.RawBytes Optional given non-zero time.Time source": optionalScanTC[time.Time, sql.RawBytes]{
 			src:           timeNow,
 			expectPresent: true,
 			expectValue:   sql.RawBytes(timeNowString),
 		},
-		"on empty any Optional with zero time.Time source": optionalScanTC[time.Time, any]{
+		"on empty any Optional given zero time.Time source": optionalScanTC[time.Time, any]{
 			src:           time.Time{},
 			expectPresent: true,
 			expectValue:   time.Time{},
 		},
-		"on empty any Optional with non-zero time.Time source": optionalScanTC[time.Time, any]{
+		"on empty any Optional given non-zero time.Time source": optionalScanTC[time.Time, any]{
 			src:           timeNow,
 			expectPresent: true,
 			expectValue:   timeNow,
 		},
-		"on empty Optional of unsupported slice with non-zero time.Time source": optionalScanTC[time.Time, []uintptr]{
+		"on empty Optional of unsupported slice given non-zero time.Time source": optionalScanTC[time.Time, []uintptr]{
 			src:         timeNow,
 			expectError: true,
 		},
-		"on empty Optional of unsupported type with non-zero time.Time source": optionalScanTC[time.Time, uintptr]{
+		"on empty Optional of unsupported type given non-zero time.Time source": optionalScanTC[time.Time, uintptr]{
 			src:         timeNow,
 			expectError: true,
 		},
-		"on empty sql.NullTime Optional with non-zero time.Time source": optionalScanTC[time.Time, sql.NullTime]{
+		"on empty sql.NullTime Optional given non-zero time.Time source": optionalScanTC[time.Time, sql.NullTime]{
 			src:           timeNow,
 			expectPresent: true,
 			expectValue:   sql.NullTime{Time: timeNow, Valid: true},
 		},
 		// Test cases for nil source
-		"on empty bool Optional with nil source": optionalScanTC[any, bool]{
+		"on empty bool Optional given nil source": optionalScanTC[any, bool]{
 			src:           nil,
 			expectPresent: false,
 		},
-		"on empty *bool Optional with nil source": optionalScanTC[any, *bool]{
+		"on empty *bool Optional given nil source": optionalScanTC[any, *bool]{
 			src:           nil,
 			expectPresent: false,
 		},
-		"on empty float64 Optional with nil source": optionalScanTC[any, float64]{
+		"on empty float64 Optional given nil source": optionalScanTC[any, float64]{
 			src:           nil,
 			expectPresent: false,
 		},
-		"on empty *float64 Optional with nil source": optionalScanTC[any, *float64]{
+		"on empty *float64 Optional given nil source": optionalScanTC[any, *float64]{
 			src:           nil,
 			expectPresent: false,
 		},
-		"on empty int64 Optional with nil source": optionalScanTC[any, int64]{
+		"on empty int64 Optional given nil source": optionalScanTC[any, int64]{
 			src:           nil,
 			expectPresent: false,
 		},
-		"on empty *int64 Optional with nil source": optionalScanTC[any, *int64]{
+		"on empty *int64 Optional given nil source": optionalScanTC[any, *int64]{
 			src:           nil,
 			expectPresent: false,
 		},
-		"on empty string Optional with nil source": optionalScanTC[any, string]{
+		"on empty string Optional given nil source": optionalScanTC[any, string]{
 			src:           nil,
 			expectPresent: false,
 		},
-		"on empty *string Optional with nil source": optionalScanTC[any, *string]{
+		"on empty *string Optional given nil source": optionalScanTC[any, *string]{
 			src:           nil,
 			expectPresent: false,
 		},
-		"on empty []byte Optional with nil source": optionalScanTC[any, []byte]{
+		"on empty []byte Optional given nil source": optionalScanTC[any, []byte]{
 			src:           nil,
 			expectPresent: false,
 		},
-		"on empty time.Time Optional with nil source": optionalScanTC[any, time.Time]{
+		"on empty time.Time Optional given nil source": optionalScanTC[any, time.Time]{
 			src:           nil,
 			expectPresent: false,
 		},
-		"on empty *time.Time Optional with nil source": optionalScanTC[any, *time.Time]{
+		"on empty *time.Time Optional given nil source": optionalScanTC[any, *time.Time]{
 			src:           nil,
 			expectPresent: false,
 		},
-		"on empty any Optional with nil source": optionalScanTC[any, any]{
+		"on empty any Optional given nil source": optionalScanTC[any, any]{
 			src:           nil,
 			expectPresent: false,
 		},
@@ -4784,15 +4899,15 @@ func TestOptional_Value(t *testing.T) {
 			opt:         Empty[sql.NullBool](),
 			expectValue: nil,
 		},
-		"on non-empty sql.NullBool Optional with zero value": optionalValueTC[sql.NullBool]{
+		"on non-empty sql.NullBool Optional given zero value": optionalValueTC[sql.NullBool]{
 			opt:         Of(sql.NullBool{}),
 			expectValue: nil,
 		},
-		"on non-empty sql.NullBool Optional with false bool value": optionalValueTC[sql.NullBool]{
+		"on non-empty sql.NullBool Optional given false bool value": optionalValueTC[sql.NullBool]{
 			opt:         Of(sql.NullBool{Bool: false, Valid: true}),
 			expectValue: false,
 		},
-		"on non-empty sql.NullBool Optional with true bool value": optionalValueTC[sql.NullBool]{
+		"on non-empty sql.NullBool Optional given true bool value": optionalValueTC[sql.NullBool]{
 			opt:         Of(sql.NullBool{Bool: true, Valid: true}),
 			expectValue: true,
 		},
@@ -4800,15 +4915,15 @@ func TestOptional_Value(t *testing.T) {
 			opt:         Empty[sql.NullInt32](),
 			expectValue: nil,
 		},
-		"on non-empty sql.NullInt32 Optional with zero value": optionalValueTC[sql.NullInt32]{
+		"on non-empty sql.NullInt32 Optional given zero value": optionalValueTC[sql.NullInt32]{
 			opt:         Of(sql.NullInt32{}),
 			expectValue: nil,
 		},
-		"on non-empty sql.NullInt32 Optional with zero int32 value": optionalValueTC[sql.NullInt32]{
+		"on non-empty sql.NullInt32 Optional given zero int32 value": optionalValueTC[sql.NullInt32]{
 			opt:         Of(sql.NullInt32{Int32: 0, Valid: true}),
 			expectValue: int64(0),
 		},
-		"on non-empty sql.NullInt32 Optional with non-zero int32 value": optionalValueTC[sql.NullInt32]{
+		"on non-empty sql.NullInt32 Optional given non-zero int32 value": optionalValueTC[sql.NullInt32]{
 			opt:         Of(sql.NullInt32{Int32: 123, Valid: true}),
 			expectValue: int64(123),
 		},
@@ -4838,37 +4953,37 @@ func (tc compareTC[T]) Test(t *testing.T) {
 func TestCompare(t *testing.T) {
 	test.RunCases(t, test.Cases{
 		// Test cases for documented examples
-		"with empty int Optional and non-empty int Optional with zero value": compareTC[int]{
+		"given empty int Optional and non-empty int Optional with zero value": compareTC[int]{
 			x:      Empty[int](),
 			y:      Of(0),
 			expect: -1,
 		},
-		"with non-empty int Optional with zero value and non-empty int Optional with positive non-zero value": compareTC[int]{
+		"given non-empty int Optional with zero value and non-empty int Optional with positive non-zero value": compareTC[int]{
 			x:      Of(0),
 			y:      Of(123),
 			expect: -1,
 		},
-		"with two empty int Optionals": compareTC[int]{
+		"given two empty int Optionals": compareTC[int]{
 			x:      Empty[int](),
 			y:      Empty[int](),
 			expect: 0,
 		},
-		"with two non-empty int Optionals with zero values": compareTC[int]{
+		"given two non-empty int Optionals with zero values": compareTC[int]{
 			x:      Of(0),
 			y:      Of(0),
 			expect: 0,
 		},
-		"with two non-empty int Optionals with same non-zero values": compareTC[int]{
+		"given two non-empty int Optionals with same non-zero values": compareTC[int]{
 			x:      Of(123),
 			y:      Of(123),
 			expect: 0,
 		},
-		"with non-empty int Optional with zero value and empty int Optional": compareTC[int]{
+		"given non-empty int Optional with zero value and empty int Optional": compareTC[int]{
 			x:      Of(0),
 			y:      Empty[int](),
 			expect: 1,
 		},
-		"with non-empty int Optional with positive non-zero value and non-empty int Optional with zero value": compareTC[int]{
+		"given non-empty int Optional with positive non-zero value and non-empty int Optional with zero value": compareTC[int]{
 			x:      Of(123),
 			y:      Of(0),
 			expect: 1,
@@ -4903,6 +5018,146 @@ func TestEmpty(t *testing.T) {
 	})
 }
 
+func BenchmarkEqual(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		Equal(Of(123), Of(123))
+	}
+}
+
+type equalTC[T1 any, T2 any] struct {
+	opt1   Optional[T1]
+	opt2   Optional[T2]
+	expect bool
+	test.Control
+}
+
+func (tc equalTC[T1, T2]) Test(t *testing.T) {
+	actual := Equal(tc.opt1, tc.opt2)
+	assert.Equal(t, tc.expect, actual, "unexpected equality")
+}
+
+func TestEqual(t *testing.T) {
+	test.RunCases(t, test.Cases{
+		// Test cases for documented examples
+		"given empty int Optional and empty int Optional": equalTC[int, int]{
+			opt1:   Empty[int](),
+			opt2:   Empty[int](),
+			expect: true,
+		},
+		"given empty int Optional and non-empty int Optional with zero value": equalTC[int, int]{
+			opt1:   Empty[int](),
+			opt2:   Of(0),
+			expect: false,
+		},
+		"given non-empty int Optional with zero value and empty int Optional": equalTC[int, int]{
+			opt1:   Of(0),
+			opt2:   Empty[int](),
+			expect: false,
+		},
+		"given non-empty int Optional with zero value and non-empty int Optional with zero value": equalTC[int, int]{
+			opt1:   Of(0),
+			opt2:   Of(0),
+			expect: true,
+		},
+		"given non-empty int Optional with zero value and non-empty int Optional with non-zero value": equalTC[int, int]{
+			opt1:   Of(0),
+			opt2:   Of(123),
+			expect: false,
+		},
+		"given non-empty int Optional with non-zero value and non-empty int Optional with zero value": equalTC[int, int]{
+			opt1:   Of(123),
+			opt2:   Of(0),
+			expect: false,
+		},
+		"given non-empty int Optional with non-zero value and non-empty int Optional with equal non-zero value": equalTC[int, int]{
+			opt1:   Of(123),
+			opt2:   Of(123),
+			expect: true,
+		},
+		"given non-empty int Optional with non-zero value and non-empty int Optional with similar but not equal non-zero value": equalTC[int, int]{
+			opt1:   Of(123),
+			opt2:   Of(-123),
+			expect: false,
+		},
+		"given non-empty int Optional with non-zero value and empty int Optional": equalTC[int, int]{
+			opt1:   Of(123),
+			opt2:   Empty[int](),
+			expect: false,
+		},
+		"given empty any Optional and empty int Optional": equalTC[any, int]{
+			opt1:   Empty[any](),
+			opt2:   Empty[int](),
+			expect: true,
+		},
+		"given empty any Optional and non-empty int Optional with zero value": equalTC[any, int]{
+			opt1:   Empty[any](),
+			opt2:   Of(0),
+			expect: false,
+		},
+		"given non-empty any Optional with zero int value and non-empty int Optional with zero value": equalTC[any, int]{
+			opt1:   Of[any](0),
+			opt2:   Of(0),
+			expect: true,
+		},
+		"given non-empty any Optional with non-zero int value and non-empty int Optional with equal non-zero value": equalTC[any, int]{
+			opt1:   Of[any](123),
+			opt2:   Of(123),
+			expect: true,
+		},
+		"given non-empty any Optional with zero int value and non-empty string Optional with similar but not equal non-zero value": equalTC[any, string]{
+			opt1:   Of[any](0),
+			opt2:   Of("0"),
+			expect: false,
+		},
+		"given empty string Optional and empty string Optional": equalTC[string, string]{
+			opt1:   Empty[string](),
+			opt2:   Empty[string](),
+			expect: true,
+		},
+		"given empty string Optional and non-empty string Optional with zero value": equalTC[string, string]{
+			opt1:   Empty[string](),
+			opt2:   Of(""),
+			expect: false,
+		},
+		"given non-empty string Optional and zero value given empty string Optional": equalTC[string, string]{
+			opt1:   Of(""),
+			opt2:   Empty[string](),
+			expect: false,
+		},
+		"given non-empty string Optional with zero value and non-empty string Optional with zero value": equalTC[string, string]{
+			opt1:   Of(""),
+			opt2:   Of(""),
+			expect: true,
+		},
+		"given non-empty string Optional with zero value and non-empty string Optional with non-zero value": equalTC[string, string]{
+			opt1:   Of(""),
+			opt2:   Of("abc"),
+			expect: false,
+		},
+		"given non-empty string Optional with non-zero value and non-empty string Optional with zero value": equalTC[string, string]{
+			opt1:   Of("abc"),
+			opt2:   Of(""),
+			expect: false,
+		},
+		"given non-empty string Optional with non-zero value and non-empty string Optional with equal non-zero value": equalTC[string, string]{
+			opt1:   Of("abc"),
+			opt2:   Of("abc"),
+			expect: true,
+		},
+		"given non-empty string Optional with non-zero value and non-empty string Optional with similar but not equal non-zero value": equalTC[string, string]{
+			opt1:   Of("abc"),
+			opt2:   Of("ABC"),
+			expect: false,
+		},
+		"given non-empty string Optional with non-zero value and empty string Optional": equalTC[string, string]{
+			opt1:   Of("abc"),
+			opt2:   Empty[string](),
+			expect: false,
+		},
+		// Other test cases...
+	})
+}
+
 func BenchmarkFind(b *testing.B) {
 	opts := []Optional[int]{Empty[int](), Empty[int](), Of(123)}
 	for i := 0; i < b.N; i++ {
@@ -4927,16 +5182,16 @@ func (tc findTC[T]) Test(t *testing.T) {
 func TestFind(t *testing.T) {
 	test.RunCases(t, test.Cases{
 		// Test cases for documented examples
-		"with no int Optionals": findTC[int]{
+		"given no int Optionals": findTC[int]{
 			expectPresent: false,
 			expectValue:   0,
 		},
-		"with empty int Optional": findTC[int]{
+		"given empty int Optional": findTC[int]{
 			opts:          []Optional[int]{Empty[int]()},
 			expectPresent: false,
 			expectValue:   0,
 		},
-		"with an empty int Optional and two non-empty int Optionals": findTC[int]{
+		"given an empty int Optional and two non-empty int Optionals": findTC[int]{
 			opts: []Optional[int]{
 				Empty[int](),
 				Of(0),
@@ -4945,16 +5200,16 @@ func TestFind(t *testing.T) {
 			expectPresent: true,
 			expectValue:   0,
 		},
-		"with no string Optionals": findTC[string]{
+		"given no string Optionals": findTC[string]{
 			expectPresent: false,
 			expectValue:   "",
 		},
-		"with empty string Optional": findTC[string]{
+		"given empty string Optional": findTC[string]{
 			opts:          []Optional[string]{Empty[string]()},
 			expectPresent: false,
 			expectValue:   "",
 		},
-		"with an empty string Optional and two non-empty string Optionals": findTC[string]{
+		"given an empty string Optional and two non-empty string Optionals": findTC[string]{
 			opts: []Optional[string]{
 				Empty[string](),
 				Of("abc"),
@@ -5015,38 +5270,38 @@ func TestFlatMap(t *testing.T) {
 
 	test.RunCases(t, test.Cases{
 		// Test cases for documented examples
-		"with empty int Optional": flatMapTC[int, string]{
+		"given empty int Optional": flatMapTC[int, string]{
 			opt:           Empty[int](),
 			fn:            toString,
 			expectPresent: false,
 		},
-		"with non-empty int Optional with zero value": flatMapTC[int, string]{
+		"given non-empty int Optional with zero value": flatMapTC[int, string]{
 			opt:           Of(0),
 			fn:            toString,
 			expectPresent: false,
 		},
-		"with non-empty int Optional with non-zero value": flatMapTC[int, string]{
+		"given non-empty int Optional with non-zero value": flatMapTC[int, string]{
 			opt:           Of(123),
 			fn:            toString,
 			expectPresent: true,
 			expectValue:   "123",
 		},
-		"with empty string Optional": flatMapTC[string, int]{
+		"given empty string Optional": flatMapTC[string, int]{
 			opt:           Empty[string](),
 			fn:            toInt,
 			expectPresent: false,
 		},
-		"with non-empty string Optional with zero value": flatMapTC[string, int]{
+		"given non-empty string Optional with zero value": flatMapTC[string, int]{
 			opt:           Of(""),
 			fn:            toInt,
 			expectPresent: false,
 		},
-		"with non-empty string Optional with zero-representing value": flatMapTC[string, int]{
+		"given non-empty string Optional with zero-representing value": flatMapTC[string, int]{
 			opt:           Of("0"),
 			fn:            toInt,
 			expectPresent: false,
 		},
-		"with non-empty string Optional with non-zero-representing value": flatMapTC[string, int]{
+		"given non-empty string Optional with non-zero-representing value": flatMapTC[string, int]{
 			opt:           Of("123"),
 			fn:            toInt,
 			expectPresent: true,
@@ -5077,14 +5332,14 @@ func (tc getAnyTC[T]) Test(t *testing.T) {
 func TestGetAny(t *testing.T) {
 	test.RunCases(t, test.Cases{
 		// Test cases for documented examples
-		"with no int Optionals": getAnyTC[int]{
+		"given no int Optionals": getAnyTC[int]{
 			expect: nil,
 		},
-		"with empty int Optional": getAnyTC[int]{
+		"given empty int Optional": getAnyTC[int]{
 			opts:   []Optional[int]{Empty[int]()},
 			expect: nil,
 		},
-		"with an empty int Optional and two non-empty int Optionals": getAnyTC[int]{
+		"given an empty int Optional and two non-empty int Optionals": getAnyTC[int]{
 			opts: []Optional[int]{
 				Empty[int](),
 				Of(0),
@@ -5092,14 +5347,14 @@ func TestGetAny(t *testing.T) {
 			},
 			expect: []int{0, 123},
 		},
-		"with no string Optionals": getAnyTC[string]{
+		"given no string Optionals": getAnyTC[string]{
 			expect: nil,
 		},
-		"with empty string Optional": getAnyTC[string]{
+		"given empty string Optional": getAnyTC[string]{
 			opts:   []Optional[string]{Empty[string]()},
 			expect: nil,
 		},
-		"with an empty string Optional and two non-empty string Optionals": getAnyTC[string]{
+		"given an empty string Optional and two non-empty string Optionals": getAnyTC[string]{
 			opts: []Optional[string]{
 				Empty[string](),
 				Of("abc"),
@@ -5150,35 +5405,35 @@ func TestMap(t *testing.T) {
 
 	test.RunCases(t, test.Cases{
 		// Test cases for documented examples
-		"with empty int Optional": mapTC[int, string]{
+		"given empty int Optional": mapTC[int, string]{
 			opt:           Empty[int](),
 			fn:            toString,
 			expectPresent: false,
 		},
-		"with non-empty int Optional with zero value": mapTC[int, string]{
+		"given non-empty int Optional with zero value": mapTC[int, string]{
 			opt:           Of(0),
 			fn:            toString,
 			expectPresent: true,
 			expectValue:   "0",
 		},
-		"with non-empty int Optional with non-zero value": mapTC[int, string]{
+		"given non-empty int Optional with non-zero value": mapTC[int, string]{
 			opt:           Of(123),
 			fn:            toString,
 			expectPresent: true,
 			expectValue:   "123",
 		},
-		"with empty string Optional": mapTC[string, int]{
+		"given empty string Optional": mapTC[string, int]{
 			opt:           Empty[string](),
 			fn:            toInt,
 			expectPresent: false,
 		},
-		"with non-empty string Optional with zero-representing value": mapTC[string, int]{
+		"given non-empty string Optional with zero-representing value": mapTC[string, int]{
 			opt:           Of("0"),
 			fn:            toInt,
 			expectPresent: true,
 			expectValue:   0,
 		},
-		"with non-empty string Optional with non-zero-representing value": mapTC[string, int]{
+		"given non-empty string Optional with non-zero-representing value": mapTC[string, int]{
 			opt:           Of("123"),
 			fn:            toInt,
 			expectPresent: true,
@@ -5219,14 +5474,14 @@ func (tc mustFindTC[T]) Test(t *testing.T) {
 func TestMustFind(t *testing.T) {
 	test.RunCases(t, test.Cases{
 		// Test cases for documented examples
-		"with no int Optionals": mustFindTC[int]{
+		"given no int Optionals": mustFindTC[int]{
 			expectPanic: true,
 		},
-		"with empty int Optional": mustFindTC[int]{
+		"given empty int Optional": mustFindTC[int]{
 			opts:        []Optional[int]{Empty[int]()},
 			expectPanic: true,
 		},
-		"with an empty int Optional and two non-empty int Optionals": mustFindTC[int]{
+		"given an empty int Optional and two non-empty int Optionals": mustFindTC[int]{
 			opts: []Optional[int]{
 				Empty[int](),
 				Of(0),
@@ -5234,14 +5489,14 @@ func TestMustFind(t *testing.T) {
 			},
 			expectValue: 0,
 		},
-		"with no string Optionals": mustFindTC[string]{
+		"given no string Optionals": mustFindTC[string]{
 			expectPanic: true,
 		},
-		"with empty string Optional": mustFindTC[string]{
+		"given empty string Optional": mustFindTC[string]{
 			opts:        []Optional[string]{Empty[string]()},
 			expectPanic: true,
 		},
-		"with an empty string Optional and two non-empty string Optionals": mustFindTC[string]{
+		"given an empty string Optional and two non-empty string Optionals": mustFindTC[string]{
 			opts: []Optional[string]{
 				Empty[string](),
 				Of("abc"),
@@ -5274,34 +5529,34 @@ func (tc ofTC[T]) Test(t *testing.T) {
 func TestOf(t *testing.T) {
 	test.RunCases(t, test.Cases{
 		// Test cases for documented examples
-		"with zero int": ofTC[int]{
+		"given zero int": ofTC[int]{
 			value: 0,
 		},
-		"with non-zero int": ofTC[int]{
+		"given non-zero int": ofTC[int]{
 			value: 123,
 		},
-		"with nil int pointer": ofTC[*int]{
+		"given nil int pointer": ofTC[*int]{
 			value: nil,
 		},
-		"with zero int pointer": ofTC[*int]{
+		"given zero int pointer": ofTC[*int]{
 			value: ptrs.ZeroInt(),
 		},
-		"with non-zero int pointer": ofTC[*int]{
+		"given non-zero int pointer": ofTC[*int]{
 			value: ptrs.Int(123),
 		},
-		"with zero string": ofTC[string]{
+		"given zero string": ofTC[string]{
 			value: "",
 		},
-		"with non-zero string": ofTC[string]{
+		"given non-zero string": ofTC[string]{
 			value: "abc",
 		},
-		"with nil string pointer": ofTC[*string]{
+		"given nil string pointer": ofTC[*string]{
 			value: nil,
 		},
-		"with zero string pointer": ofTC[*string]{
+		"given zero string pointer": ofTC[*string]{
 			value: ptrs.ZeroString(),
 		},
-		"with non-zero string pointer": ofTC[*string]{
+		"given non-zero string pointer": ofTC[*string]{
 			value: ptrs.String("abc"),
 		},
 		// Other test cases...
@@ -5331,43 +5586,43 @@ func (tc ofNillableTC[T]) Test(t *testing.T) {
 func TestOfNillable(t *testing.T) {
 	test.RunCases(t, test.Cases{
 		// Test cases for documented examples
-		"with zero int": ofNillableTC[int]{
+		"given zero int": ofNillableTC[int]{
 			value:         0,
 			expectPresent: true,
 		},
-		"with non-zero int": ofNillableTC[int]{
+		"given non-zero int": ofNillableTC[int]{
 			value:         123,
 			expectPresent: true,
 		},
-		"with nil int pointer": ofNillableTC[*int]{
+		"given nil int pointer": ofNillableTC[*int]{
 			value:         nil,
 			expectPresent: false,
 		},
-		"with zero int pointer": ofNillableTC[*int]{
+		"given zero int pointer": ofNillableTC[*int]{
 			value:         ptrs.ZeroInt(),
 			expectPresent: true,
 		},
-		"with non-zero int pointer": ofNillableTC[*int]{
+		"given non-zero int pointer": ofNillableTC[*int]{
 			value:         ptrs.Int(123),
 			expectPresent: true,
 		},
-		"with zero string": ofNillableTC[string]{
+		"given zero string": ofNillableTC[string]{
 			value:         "",
 			expectPresent: true,
 		},
-		"with non-zero string": ofNillableTC[string]{
+		"given non-zero string": ofNillableTC[string]{
 			value:         "abc",
 			expectPresent: true,
 		},
-		"with nil string pointer": ofNillableTC[*string]{
+		"given nil string pointer": ofNillableTC[*string]{
 			value:         nil,
 			expectPresent: false,
 		},
-		"with zero string pointer": ofNillableTC[*string]{
+		"given zero string pointer": ofNillableTC[*string]{
 			value:         ptrs.ZeroString(),
 			expectPresent: true,
 		},
-		"with non-zero string pointer": ofNillableTC[*string]{
+		"given non-zero string pointer": ofNillableTC[*string]{
 			value:         ptrs.String("abc"),
 			expectPresent: true,
 		},
@@ -5397,16 +5652,16 @@ func (tc ofPointerTC[T]) Test(t *testing.T) {
 func TestOfPointer(t *testing.T) {
 	test.RunCases(t, test.Cases{
 		// Test cases for documented examples
-		"with zero int": ofPointerTC[int]{
+		"given zero int": ofPointerTC[int]{
 			value: 0,
 		},
-		"with non-zero int": ofPointerTC[int]{
+		"given non-zero int": ofPointerTC[int]{
 			value: 123,
 		},
-		"with zero string": ofPointerTC[string]{
+		"given zero string": ofPointerTC[string]{
 			value: "",
 		},
-		"with non-zero string": ofPointerTC[string]{
+		"given non-zero string": ofPointerTC[string]{
 			value: "abc",
 		},
 		// Other test cases...
@@ -5435,43 +5690,43 @@ func (tc ofZeroableTC[T]) Test(t *testing.T) {
 func TestOfZeroable(t *testing.T) {
 	test.RunCases(t, test.Cases{
 		// Test cases for documented examples
-		"with zero int": ofZeroableTC[int]{
+		"given zero int": ofZeroableTC[int]{
 			value:         0,
 			expectPresent: false,
 		},
-		"with non-zero int": ofZeroableTC[int]{
+		"given non-zero int": ofZeroableTC[int]{
 			value:         123,
 			expectPresent: true,
 		},
-		"with nil int pointer": ofZeroableTC[*int]{
+		"given nil int pointer": ofZeroableTC[*int]{
 			value:         nil,
 			expectPresent: false,
 		},
-		"with zero int pointer": ofZeroableTC[*int]{
+		"given zero int pointer": ofZeroableTC[*int]{
 			value:         ptrs.ZeroInt(),
 			expectPresent: true,
 		},
-		"with non-zero int pointer": ofZeroableTC[*int]{
+		"given non-zero int pointer": ofZeroableTC[*int]{
 			value:         ptrs.Int(123),
 			expectPresent: true,
 		},
-		"with zero string": ofZeroableTC[string]{
+		"given zero string": ofZeroableTC[string]{
 			value:         "",
 			expectPresent: false,
 		},
-		"with non-zero string": ofZeroableTC[string]{
+		"given non-zero string": ofZeroableTC[string]{
 			value:         "abc",
 			expectPresent: true,
 		},
-		"with nil string pointer": ofZeroableTC[*string]{
+		"given nil string pointer": ofZeroableTC[*string]{
 			value:         nil,
 			expectPresent: false,
 		},
-		"with zero string pointer": ofZeroableTC[*string]{
+		"given zero string pointer": ofZeroableTC[*string]{
 			value:         ptrs.ZeroString(),
 			expectPresent: true,
 		},
-		"with non-zero string pointer": ofZeroableTC[*string]{
+		"given non-zero string pointer": ofZeroableTC[*string]{
 			value:         ptrs.String("abc"),
 			expectPresent: true,
 		},
@@ -5510,14 +5765,14 @@ func (tc requireAnyTC[T]) Test(t *testing.T) {
 func TestRequireAny(t *testing.T) {
 	test.RunCases(t, test.Cases{
 		// Test cases for documented examples
-		"with no int Optionals": requireAnyTC[int]{
+		"given no int Optionals": requireAnyTC[int]{
 			expectPanic: true,
 		},
-		"with empty int Optional": requireAnyTC[int]{
+		"given empty int Optional": requireAnyTC[int]{
 			opts:        []Optional[int]{Empty[int]()},
 			expectPanic: true,
 		},
-		"with an empty int Optional and two non-empty int Optionals": requireAnyTC[int]{
+		"given an empty int Optional and two non-empty int Optionals": requireAnyTC[int]{
 			opts: []Optional[int]{
 				Empty[int](),
 				Of(0),
@@ -5525,14 +5780,14 @@ func TestRequireAny(t *testing.T) {
 			},
 			expectValues: []int{0, 123},
 		},
-		"with no string Optionals": requireAnyTC[string]{
+		"given no string Optionals": requireAnyTC[string]{
 			expectPanic: true,
 		},
-		"with empty string Optional": requireAnyTC[string]{
+		"given empty string Optional": requireAnyTC[string]{
 			opts:        []Optional[string]{Empty[string]()},
 			expectPanic: true,
 		},
-		"with an empty string Optional and two non-empty string Optionals": requireAnyTC[string]{
+		"given an empty string Optional and two non-empty string Optionals": requireAnyTC[string]{
 			opts: []Optional[string]{
 				Empty[string](),
 				Of("abc"),
@@ -5600,44 +5855,44 @@ func TestTryFlatMap(t *testing.T) {
 
 	test.RunCases(t, test.Cases{
 		// Test cases for documented examples
-		"with empty int Optional": tryFatMapTC[int, string]{
+		"given empty int Optional": tryFatMapTC[int, string]{
 			opt:           Empty[int](),
 			fn:            toString,
 			expectPresent: false,
 		},
-		"with non-empty int Optional with zero value": tryFatMapTC[int, string]{
+		"given non-empty int Optional with zero value": tryFatMapTC[int, string]{
 			opt:           Of(0),
 			fn:            toString,
 			expectPresent: false,
 		},
-		"with non-empty int Optional with non-zero value": tryFatMapTC[int, string]{
+		"given non-empty int Optional with non-zero value": tryFatMapTC[int, string]{
 			opt:           Of(123),
 			fn:            toString,
 			expectPresent: true,
 			expectValue:   "123",
 		},
-		"with empty string Optional": tryFatMapTC[string, int]{
+		"given empty string Optional": tryFatMapTC[string, int]{
 			opt:           Empty[string](),
 			fn:            toInt,
 			expectPresent: false,
 		},
-		"with non-empty string Optional with zero value": tryFatMapTC[string, int]{
+		"given non-empty string Optional with zero value": tryFatMapTC[string, int]{
 			opt:           Of(""),
 			fn:            toInt,
 			expectPresent: false,
 		},
-		"with non-empty string Optional with zero-representing value": tryFatMapTC[string, int]{
+		"given non-empty string Optional with zero-representing value": tryFatMapTC[string, int]{
 			opt:           Of("0"),
 			fn:            toInt,
 			expectPresent: false,
 		},
-		"with non-empty string Optional with non-zero-representing value": tryFatMapTC[string, int]{
+		"given non-empty string Optional with non-zero-representing value": tryFatMapTC[string, int]{
 			opt:           Of("123"),
 			fn:            toInt,
 			expectPresent: true,
 			expectValue:   123,
 		},
-		"with non-empty string Optional with erroneous value": tryFatMapTC[string, int]{
+		"given non-empty string Optional with erroneous value": tryFatMapTC[string, int]{
 			opt:         Of("abc"),
 			fn:          toInt,
 			expectError: true,
@@ -5690,41 +5945,41 @@ func TestTryMap(t *testing.T) {
 
 	test.RunCases(t, test.Cases{
 		// Test cases for documented examples
-		"with empty int Optional": tryMapTC[int, string]{
+		"given empty int Optional": tryMapTC[int, string]{
 			opt:           Empty[int](),
 			fn:            toString,
 			expectPresent: false,
 		},
-		"with non-empty int Optional with zero value": tryMapTC[int, string]{
+		"given non-empty int Optional with zero value": tryMapTC[int, string]{
 			opt:           Of(0),
 			fn:            toString,
 			expectPresent: true,
 			expectValue:   "0",
 		},
-		"with non-empty int Optional with non-zero value": tryMapTC[int, string]{
+		"given non-empty int Optional with non-zero value": tryMapTC[int, string]{
 			opt:           Of(123),
 			fn:            toString,
 			expectPresent: true,
 			expectValue:   "123",
 		},
-		"with empty string Optional": tryMapTC[string, int]{
+		"given empty string Optional": tryMapTC[string, int]{
 			opt:           Empty[string](),
 			fn:            toInt,
 			expectPresent: false,
 		},
-		"with non-empty string Optional with zero-representing value": tryMapTC[string, int]{
+		"given non-empty string Optional with zero-representing value": tryMapTC[string, int]{
 			opt:           Of("0"),
 			fn:            toInt,
 			expectPresent: true,
 			expectValue:   0,
 		},
-		"with non-empty string Optional with non-zero-representing value": tryMapTC[string, int]{
+		"given non-empty string Optional with non-zero-representing value": tryMapTC[string, int]{
 			opt:           Of("123"),
 			fn:            toInt,
 			expectPresent: true,
 			expectValue:   123,
 		},
-		"with non-empty string Optional with erroneous value": tryMapTC[string, int]{
+		"given non-empty string Optional with erroneous value": tryMapTC[string, int]{
 			opt:         Of("abc"),
 			fn:          toInt,
 			expectError: true,

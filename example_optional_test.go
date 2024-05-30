@@ -41,6 +41,52 @@ var (
 	db  *sql.DB
 )
 
+func ExampleOptional_Equal_int() {
+	fmt.Println(Empty[int]().Equal(Empty[int]()))
+	fmt.Println(Empty[int]().Equal(Of(0)))
+	fmt.Println(Of(0).Equal(Empty[int]()))
+	fmt.Println(Of(0).Equal(Of(0)))
+	fmt.Println(Of(0).Equal(Of(123)))
+	fmt.Println(Of(123).Equal(Of(0)))
+	fmt.Println(Of(123).Equal(Of(123)))
+	fmt.Println(Of(123).Equal(Of(-123)))
+	fmt.Println(Of(123).Equal(Empty[int]()))
+
+	// Output:
+	// true
+	// false
+	// false
+	// true
+	// false
+	// false
+	// true
+	// false
+	// false
+}
+
+func ExampleOptional_Equal_string() {
+	fmt.Println(Empty[string]().Equal(Empty[string]()))
+	fmt.Println(Empty[string]().Equal(Of("")))
+	fmt.Println(Of("").Equal(Empty[string]()))
+	fmt.Println(Of("").Equal(Of("")))
+	fmt.Println(Of("").Equal(Of("abc")))
+	fmt.Println(Of("abc").Equal(Of("")))
+	fmt.Println(Of("abc").Equal(Of("abc")))
+	fmt.Println(Of("abc").Equal(Of("ABC")))
+	fmt.Println(Of("abc").Equal(Empty[string]()))
+
+	// Output:
+	// true
+	// false
+	// false
+	// true
+	// false
+	// false
+	// true
+	// false
+	// false
+}
+
 func ExampleOptional_Filter_int() {
 	isPos := func(value int) bool {
 		return value >= 0
@@ -590,6 +636,67 @@ func ExampleEmpty_string() {
 	// Output: <empty>
 }
 
+func ExampleEqual_int() {
+	fmt.Println(Equal(Empty[int](), Empty[int]()))
+	fmt.Println(Equal(Empty[int](), Of(0)))
+	fmt.Println(Equal(Of(0), Empty[int]()))
+	fmt.Println(Equal(Of(0), Of(0)))
+	fmt.Println(Equal(Of(0), Of(123)))
+	fmt.Println(Equal(Of(123), Of(0)))
+	fmt.Println(Equal(Of(123), Of(123)))
+	fmt.Println(Equal(Of(123), Of(-123)))
+	fmt.Println(Equal(Of(123), Empty[int]()))
+
+	// Output:
+	// true
+	// false
+	// false
+	// true
+	// false
+	// false
+	// true
+	// false
+	// false
+}
+
+func ExampleEqual_mixed() {
+	fmt.Println(Equal(Empty[any](), Empty[int]()))
+	fmt.Println(Equal(Empty[any](), Of(0)))
+	fmt.Println(Equal(Of[any](0), Of(0)))
+	fmt.Println(Equal(Of[any](123), Of(123)))
+	fmt.Println(Equal(Of(0), Of("0")))
+
+	// Output:
+	// true
+	// false
+	// true
+	// true
+	// false
+}
+
+func ExampleEqual_string() {
+	fmt.Println(Equal(Empty[string](), Empty[string]()))
+	fmt.Println(Equal(Empty[string](), Of("")))
+	fmt.Println(Equal(Of(""), Empty[string]()))
+	fmt.Println(Equal(Of(""), Of("")))
+	fmt.Println(Equal(Of(""), Of("abc")))
+	fmt.Println(Equal(Of("abc"), Of("")))
+	fmt.Println(Equal(Of("abc"), Of("abc")))
+	fmt.Println(Equal(Of("abc"), Of("ABC")))
+	fmt.Println(Equal(Of("abc"), Empty[string]()))
+
+	// Output:
+	// true
+	// false
+	// false
+	// true
+	// false
+	// false
+	// true
+	// false
+	// false
+}
+
 func ExampleFind_int() {
 	example.Print(Find[int]())
 	example.Print(Find(Empty[int]()))
@@ -745,7 +852,7 @@ func ExampleOf_int() {
 	// 123
 }
 
-func ExampleOf_int_pointer() {
+func ExampleOf_intPointer() {
 	example.Print(Of((*int)(nil)))
 	example.Print(Of(ptrs.ZeroInt()))
 	example.Print(Of(ptrs.Int(123)))
@@ -765,7 +872,7 @@ func ExampleOf_string() {
 	// "abc"
 }
 
-func ExampleOf_string_pointer() {
+func ExampleOf_stringPointer() {
 	example.Print(Of((*string)(nil)))
 	example.Print(Of(ptrs.ZeroString()))
 	example.Print(Of(ptrs.String("abc")))
@@ -785,7 +892,7 @@ func ExampleOfNillable_int() {
 	// 123
 }
 
-func ExampleOfNillable_int_pointer() {
+func ExampleOfNillable_intPointer() {
 	example.Print(OfNillable((*int)(nil)))
 	example.Print(OfNillable(ptrs.ZeroInt()))
 	example.Print(OfNillable(ptrs.Int(123)))
@@ -805,7 +912,7 @@ func ExampleOfNillable_string() {
 	// "abc"
 }
 
-func ExampleOfNillable_string_pointer() {
+func ExampleOfNillable_stringPointer() {
 	example.Print(OfNillable((*string)(nil)))
 	example.Print(OfNillable(ptrs.ZeroString()))
 	example.Print(OfNillable(ptrs.String("abc")))
@@ -843,7 +950,7 @@ func ExampleOfZeroable_int() {
 	// 123
 }
 
-func ExampleOfZeroable_int_pointer() {
+func ExampleOfZeroable_intPointer() {
 	example.Print(OfZeroable((*int)(nil)))
 	example.Print(OfZeroable(ptrs.ZeroInt()))
 	example.Print(OfZeroable(ptrs.Int(123)))
@@ -863,7 +970,7 @@ func ExampleOfZeroable_string() {
 	// "abc"
 }
 
-func ExampleOfZeroable_string_pointer() {
+func ExampleOfZeroable_stringPointer() {
 	example.Print(OfZeroable((*string)(nil)))
 	example.Print(OfZeroable(ptrs.ZeroString()))
 	example.Print(OfZeroable(ptrs.String("abc")))
