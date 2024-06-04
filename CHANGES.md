@@ -1,3 +1,7 @@
+## Version 0.1.2, 2024.06.04
+
+* Add Equal functions [4096750](https://github.com/neocotic/go-optional/commit/40967502d762ed6fb526e0f9803ca0af2ddf462b)
+
 ## Version 0.1.1, 2024.05.23
 
 * Change string representation of empty Optional [384ef95](https://github.com/neocotic/go-optional/commit/384ef95e0e84cd5acf77be5c3d6858313a23097d)
