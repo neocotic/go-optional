@@ -1,4 +1,4 @@
-// Copyright (C) 2024 neocotic
+// Copyright (C) 2026 airmrcr
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -23,8 +23,9 @@ package sort
 
 import (
 	"cmp"
-	"github.com/neocotic/go-optional"
 	"sort"
+
+	"github.com/airmrcr/go-optional"
 )
 
 // Asc sorts the given slice using optional.Compare in ascending order.

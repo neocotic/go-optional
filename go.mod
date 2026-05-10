@@ -1,10 +1,10 @@
-module github.com/neocotic/go-optional
+module github.com/airmrcr/go-optional
 
 go 1.21
 
 require (
-	github.com/neocotic/go-pointers v0.2.0
-	github.com/stretchr/testify v1.9.0
+	github.com/airmrcr/go-pointers v0.3.0
+	github.com/stretchr/testify v1.11.1
 	gopkg.in/yaml.v3 v3.0.1
 )
 

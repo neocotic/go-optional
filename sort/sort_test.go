@@ -1,4 +1,4 @@
-// Copyright (C) 2024 neocotic
+// Copyright (C) 2026 airmrcr
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -22,10 +22,11 @@ package sort
 
 import (
 	"cmp"
-	"github.com/neocotic/go-optional"
-	"github.com/neocotic/go-optional/internal/test"
-	"github.com/stretchr/testify/assert"
 	"testing"
+
+	"github.com/airmrcr/go-optional"
+	"github.com/airmrcr/go-optional/internal/test"
+	"github.com/stretchr/testify/assert"
 )
 
 func BenchmarkAsc(b *testing.B) {

@@ -1,4 +1,4 @@
-// Copyright (C) 2024 neocotic
+// Copyright (C) 2026 airmrcr
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -27,16 +27,17 @@ import (
 	"encoding/json"
 	"encoding/xml"
 	"errors"
-	"github.com/neocotic/go-optional/internal/test"
-	ptrs "github.com/neocotic/go-pointers"
-	"github.com/stretchr/testify/assert"
-	"gopkg.in/yaml.v3"
 	"math"
 	"strconv"
 	"strings"
 	"testing"
 	"time"
 	"unicode"
+
+	"github.com/airmrcr/go-optional/internal/test"
+	ptrs "github.com/airmrcr/go-pointers"
+	"github.com/stretchr/testify/assert"
+	"gopkg.in/yaml.v3"
 )
 
 func BenchmarkOptional_Equal(b *testing.B) {

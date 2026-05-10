@@ -1,4 +1,4 @@
-// Copyright (C) 2024 neocotic
+// Copyright (C) 2026 airmrcr
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -22,8 +22,9 @@ package sort
 
 import (
 	"fmt"
-	"github.com/neocotic/go-optional"
-	"github.com/neocotic/go-optional/internal/example"
+
+	"github.com/airmrcr/go-optional"
+	"github.com/airmrcr/go-optional/internal/example"
 )
 
 func ExampleAsc_int() {

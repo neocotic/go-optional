@@ -1,4 +1,4 @@
-// Copyright (C) 2024 neocotic
+// Copyright (C) 2026 airmrcr
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -27,13 +27,14 @@ import (
 	"encoding/xml"
 	"errors"
 	"fmt"
-	"github.com/neocotic/go-optional/internal/example"
-	ptrs "github.com/neocotic/go-pointers"
-	"gopkg.in/yaml.v3"
 	"log"
 	"strconv"
 	"strings"
 	"unicode"
+
+	"github.com/airmrcr/go-optional/internal/example"
+	ptrs "github.com/airmrcr/go-pointers"
+	"gopkg.in/yaml.v3"
 )
 
 var (

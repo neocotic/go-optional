@@ -1,4 +1,4 @@
-// Copyright (C) 2024 neocotic
+// Copyright (C) 2026 airmrcr
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -31,11 +31,12 @@ import (
 	"encoding/xml"
 	"errors"
 	"fmt"
-	"gopkg.in/yaml.v3"
 	"reflect"
 	"strconv"
 	"strings"
 	"time"
+
+	"gopkg.in/yaml.v3"
 )
 
 // Optional contains an immutable value as well as an indication whether it was explicitly set. This can be especially
